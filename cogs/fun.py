@@ -1,5 +1,6 @@
 import discord, json, urllib.request, urllib.error, random, time, asyncio
 from discord.ext import commands
+from discord import app_commands
 
 UWUS = ["uwuäöähöhöähäöäöh", "uwu"]
 DNLINKS = {
@@ -28,30 +29,17 @@ class Fun(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @commands.command()
-    async def say(self, ctx, *, args):
-        await ctx.channel.purge(limit=1)
-        await ctx.send(args)
+    @app_commands.command(name="say", description="Papagei.exe")
+    @app_commands.describe(text="Text, den der Bot sagen soll.")
+    async def say(self, i: discord.Interaction, text: str):
+        await i.response.send_message(text)
 
-    @commands.command()
-    async def meme(self, ctx):
-        api = urllib.request.urlopen("https://meme-api.herokuapp.com/gimme")
-        data = json.load(api)
-        title = data["title"]
-        url = data["url"]
-        author = data["author"]
-        embed = discord.Embed(title=title, colour=discord.Colour.blue())
-        embed.set_image(url=url)
-        embed.set_footer(text=f"Meme von {author}")
-        await ctx.send(embed=embed)
+    @app_commands.command(name="uwu", description="uwu :point_right::point_left::blush:")
+    async def uwu(self, i: discord.Interaction):
+        await i.response.send_message(random.choice(UWUS))
 
-    @commands.command()
-    async def uwu(self, ctx):
-        await ctx.channel.purge(limit=1)
-        await ctx.send(random.choice(UWUS))
-
-    @commands.command()
-    async def dnlink(self, ctx):
+    @app_commands.command(name="dnlink", description="Schickt einen Link in das Darknet. Besuchen auf eigene Gefahr.")
+    async def dnlink(self, i: discord.Interaction):
         embed = discord.Embed(title="Darknet Link",
                               description="Um den Link zu öffnen, brauchst du den [Tor Browser](https://www.torproject.org/)",
                               colour=discord.Colour.dark_red())
@@ -59,10 +47,10 @@ class Fun(commands.Cog):
         parts = link.split(" - ")
         url = DNLINKS[link]
         embed.add_field(name=f"{parts[0]}:  {url}", value=parts[1])
-        await ctx.send(embed=embed)
+        await i.response.send_message(embed=embed)
 
     @commands.command()
-    async def catgirl(self, ctx): # awwnime
+    async def catgirl(self, i: discord.Interaction):
         while True:
             try:
                 api = urllib.request.urlopen("https://www.reddit.com/r/CatgirlSFW.json")
@@ -74,14 +62,14 @@ class Fun(commands.Cog):
                         embed = discord.Embed(title="Catgirl", colour=discord.Colour.blue())
                         embed.set_image(url=purl)
                         embed.set_footer(text="Powered by: r/CatgirlSFW")
-                        await ctx.send(embed=embed)
+                        await i.response.send_message(embed=embed)
                         return
             except urllib.error.HTTPError as e:
-                await ctx.send("Warte bitte kurz...")
-                await asyncio.sleep(5)
+                await i.response.send_message("Versuche es bitte etwas später nochmal.")
+                return
 
-    @commands.command()
-    async def anime(self, ctx): # awwnime
+    @app_commands.command(name="awwnime", description="Schickt ein Anime-Bild aus r/awwnime")
+    async def awwnime(self, i: discord.Interaction):
         while True:
             try:
                 api = urllib.request.urlopen("https://www.reddit.com/r/awwnime.json")
@@ -93,15 +81,14 @@ class Fun(commands.Cog):
                         embed = discord.Embed(title="Anime", colour=discord.Colour.blue())
                         embed.set_image(url=purl)
                         embed.set_footer(text="Powered by: r/awwnime")
-                        await ctx.send(embed=embed)
+                        await i.response.send_message(embed=embed)
                         return
             except urllib.error.HTTPError as e:
-                await ctx.send("Warte bitte kurz...")
-                await asyncio.sleep(5)
+                await i.response.send_message("Versuche es bitte etwas später nochmal")
 
-    @commands.command()
-    async def idk(self, ctx):
-        await ctx.send(random.choice(IDKS))
+    @app_commands.command(name="idk", description=":shrug:")
+    async def idk(self, i: discord.Interaction):
+        await i.response.send_message(random.choice(IDKS))
 
 
 async def setup(client):

@@ -1,16 +1,13 @@
 import os, discord
 from dotenv import load_dotenv
+from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound
 
-print("Starte...\n\r")
-
 
 BASIC = {
-    "help":"Zeigt eine kurze Hilfe zum Bot",
-    "info": "Zeigt Informationen über diesen Bot",
+    "help": "Zeigt eine kurze Hilfe zum Bot",
     "commands": "Das hier.",
-    "setup": "Richtet den Server für die Bot-Nutzung an."
 }
 SERVER = {
     "kick <Nutzer> [Grund]  -   Nur mit Kick-Rechten": "Kickt einen Nutzer",
@@ -51,7 +48,7 @@ VERSION = "0.6"
 
 intents = discord.Intents.default()
 intents.members = True
-
+intents.message_content = True
 client = commands.Bot(command_prefix=PREFIX, help_command=None, intents=intents.all(), case_insensitive=True)
 
 
@@ -97,6 +94,16 @@ async def on_command_error(ctx, error):
 
 
 @client.command()
+@commands.is_owner()
+async def sync(ctx):
+    try:
+        await client.tree.sync()
+        print("Synced.")
+    except discord.HTTPException as e:
+        print("Syncing fehlgeschlagen: " + e.text)
+
+
+@client.command()
 async def commands(ctx):
     embed = discord.Embed(title="Befehlsübersicht",
                           description=f"Um einen Befehl zu nutzen, gib ein ```{PREFIX}<Befehl> [Argumente]```",
@@ -108,6 +115,23 @@ async def commands(ctx):
         embed.add_field(name=cog, value=msg, inline=False)
         msg = ""
     await ctx.send(embed=embed)
+
+
+@client.tree.command(name="test")
+@app_commands.describe(option1="Erste Option")
+async def test(i: discord.Interaction, option1: str):
+    await i.response.send_message(option1)
+
+
+@client.tree.command(name="help", description="Eine kurze Hilfe zu diesem Bot")
+async def help(i: discord.Interaction):
+    embed = discord.Embed(title="Hilfe zum Bot", description="Danke, dass du Bot.exe nutzt!",
+                          colour=discord.Colour.blue()).set_thumbnail(url=client.user.avatar)
+    embed.add_field(name="Befehle",
+                    value=f"Befehle sind bestimmte, meist englische, Schlüsselwörter und fangen mit einem Präfix, ```{PREFIX}``` in unserem Fall, an. Für eine Liste aller Befehle, gib ein:```{PREFIX}commands``` ")
+    embed.add_field(name="Bots",
+                    value="Bots sind Discord User, die von einem Programm gesteuert werden. Sie können zum Beispiel auf Nachrichten reagieren und Befehle ausführen.")
+    await i.response.send_message(embed=embed)
 
 
 @client.command()

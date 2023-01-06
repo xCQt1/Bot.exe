@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 from discord import Member
 
 STATUS = {
@@ -16,84 +17,75 @@ class Administration(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @commands.command(aliases=["k"])
-    @commands.has_permissions(kick_members=True)
-    async def kick(self, ctx, members: commands.Greedy[discord.Member], *, reason=None):
-        for member in members:
-            await member.kick(reason=reason)
-            print(f"{ctx.author.name} hat {member.display_name} aus {ctx.guild} gekickt. Grund: {reason}")
-        embed = discord.Embed(title=f"{members} wurde(n) von {ctx.author.mention} gekickt.",
+    @app_commands.command(name="kick", description="Entfernt einen Nutzer vom Server. Dieser kann wieder beitreten.")
+    @app_commands.describe(user="User, der gekickt werden soll.",
+                           grund="Grund, aus dem der User gekickt werden soll (z.B. Spamming, etc.).")
+    @app_commands.checks.has_permissions(ban_members=True)
+    async def kick(self, i: discord.Interaction, user: discord.Member, grund: str = None):
+        for member in user:
+            await member.kick(reason=grund)
+        embed = discord.Embed(title=f"{user} wurde(n) von {i.message.author.mention} gekickt.",
                               colour=discord.Colour.dark_red()).add_field(name="Grund:",
-                                                                          value=reason)
-        await ctx.send(embed=embed)
+                                                                          value=grund)
+        await i.response.send_message(embed=embed)
 
-    @commands.command(aliases=["b"])
-    @commands.has_permissions(ban_members=True)
-    async def ban(self, ctx, members: commands.Greedy[discord.Member], *, reason=None):
-        for member in members:
-            await member.ban(reason=reason)
-            print(f"{member.name} wurde von {ctx.author} aus {ctx.guild} gebannt. Grund: {reason}")
-        embed = discord.Embed(title=f"{members} wurde(n) von {ctx.author.mention} gebannt.",
+    @app_commands.command(name="ban", description="Entfernt User dauerhaft vom Server.")
+    @app_commands.describe(user="User, der gebannt werden soll.",
+                           grund="Der Grund, aus dem der User gebannt werden soll.")
+    @app_commands.checks.has_permissions(ban_members=True)
+    async def ban(self, i: discord.Interaction, user: discord.Member, grund: str = None):
+        await user.ban(reason=grund)
+        embed = discord.Embed(title=f"{user.name} wurde(n) von {i.message.author.mention} gebannt.",
                               colour=discord.Colour.dark_red()).add_field(name="Grund:",
-                                                                          value=reason)
-        await ctx.send(embed=embed)
+                                                                          value=grund)
+        await i.response.send_message(embed=embed)
 
-    @commands.command()
-    async def unban(self, ctx, *, member: discord.member = None):
-        if member == None:
-            await ctx.send("Du musst einen User angeben")
-        else:
-            banned_users = await ctx.guild.bans()
-            member_name, member_discriminator = member.split("#")
+    @app_commands.command(name="unban", description="Entbannt einen User. Dieser muss gebannt worden sein.")
+    @app_commands.describe(user="User, der entbannt werden soll.")
+    async def unban(self, i: discord.Interaction, user: discord.Member = None):
+            banned_users = i.guild.bans()
+            member_name, member_discriminator = user.split("#")
             for ban_entry in banned_users:
                 user = ban_entry.user
                 if (user.name, user.discriminator) == (member_name, member_discriminator):
-                    await ctx.guild.unban(user)
-                    await ctx.send(f"*{user.name}#{user.discriminator}* wurde von *{ctx.author.name}* wieder entbannt.")
-                    print(f"{ctx.author.name} hat {user.name}#{user.discriminator} entbannt.")
+                    await i.guild.unban(user)
+                    await i.response.send_message(f"*{user.name}#{user.discriminator}* wurde von *{i.message.author.name}* wieder entbannt.")
                     return
-            await ctx.send(f"Es konnte niemand mit dem Namen \"{member}\" gefunden werden.")
+            await i.response.send_message(f"Es konnte niemand mit dem Namen \"{user}\" gefunden werden.")
 
-    @commands.command()
-    async def warn(self, ctx, user: discord.Member = None, *, reason="kein Grund"):
-        if user == None:
-            await ctx.send("Du musst einen User angeben")
-        else:
+    @app_commands.command(name="warn", description="Verwarnt einen User.")
+    @app_commands.describe(user="User, der verwarnt werden soll.",
+                           grund="Der Grund, weshalb der User verwarnt werden soll.")
+    async def warn(self, i: discord.Interaction, user: discord.Member = None, grund: str = "kein Grund"):
             try:
                 embed = discord.Embed(title=f"{user.display_name} wurde verwarnt",
-                                      description=f"{user.mention} wurde von {ctx.author.name} verwarnt.",
-                                      colour=discord.Colour.dark_red()).add_field(name="Grund", value=reason)
-                await ctx.send(embed=embed)
+                                      description=f"{user.mention} wurde von {i.message.author.name} verwarnt.",
+                                      colour=discord.Colour.dark_red()).add_field(name="Grund", value=grund)
+                await i.response.send_message(embed=embed)
             except:
-                await ctx.send("Der User konnte nicht gefunden werden")
+                await i.response.send_message("Der User konnte nicht gefunden werden")
 
-    @commands.command()
-    async def announce(self, ctx, *, content):
-        channel = discord.utils.get(ctx.guild.text_channels, name="Ankündigungen")
-        embed = discord.Embed(title=f"Ankündigung von {ctx.name.mention}", description=f"@everyone {content}")
-        await channel.send(embed=embed)
-
-    @commands.command()
-    async def guild(self, ctx):
-        embed = discord.Embed(title=f"{ctx.guild.name} Info", description=ctx.guild.description,
+    @app_commands.command()
+    async def guild(self, i: discord.Interaction):
+        embed = discord.Embed(title=f"{i.guild.name} Info", description=i.guild.description,
                               color=discord.Colour.blue())
-        embed.add_field(name="Erstellt", value=ctx.guild.created_at.strftime("%d %b %Y"), inline=True)
-        embed.add_field(name="Eigentümer", value=f"{ctx.guild.owner.mention}", inline=True)
-        embed.add_field(name="Mitglieder", value=f"{ctx.guild.member_count} Members", inline=False)
+        embed.add_field(name="Erstellt", value=i.guild.created_at.strftime("%d %b %Y"), inline=True)
+        embed.add_field(name="Eigentümer", value=f"{i.guild.owner.mention}", inline=True)
+        embed.add_field(name="Mitglieder", value=f"{i.guild.member_count} Members", inline=False)
         embed.add_field(name="Anzahl der Rollen",
-                        value=str(len(ctx.guild.roles)-1),
+                        value=str(len(i.guild.roles)-1),
                         inline=True)
         embed.add_field(name="Anzahl der Channel",
-                        value=f"{len(ctx.guild.text_channels)} Text + {len(ctx.guild.voice_channels)} Voice",
+                        value=f"{len(i.guild.text_channels)} Text + {len(i.guild.voice_channels)} Voice",
                         inline=True)
-        embed.set_thumbnail(url=ctx.guild.icon_url)
-        embed.set_footer(text=f"ID: {ctx.guild.id}")
-        await ctx.send(embed=embed)
+        embed.set_thumbnail(url=i.guild.icon)
+        embed.set_footer(text=f"ID: {i.guild.id}")
+        await i.response.send_message(embed=embed)
 
-    @commands.command()
+    @app_commands.command(name="invite", description="Erstellt eine Einladung zu diesem Server und schickt sie dem angegebenen User per DM.")
+    @app_commands.describe(user="Nutzer, der eingeladen werden soll.")
     async def invite(self, ctx, *, user: discord.Member = None):
         link = await ctx.channel.create_invite(max_age=300)
-        print(user)
         if user == None:
             embed = discord.Embed(title="Einladungslink",
                                   description="Schicke einem User den Link, damit er dem Server beitreten kann.",
@@ -102,7 +94,6 @@ class Administration(commands.Cog):
             embed.add_field(name="Einladungslink", value=link, inline=True)
             embed.set_author(name=ctx.author.name)
             embed.set_footer(text="**HuSt**")
-            print(f"{ctx.author.name} hat eine Einladung erstellt.")
             await ctx.send(embed=embed)
         else:
             try:
@@ -115,11 +106,13 @@ class Administration(commands.Cog):
             except:
                 await ctx.send("Der User konnte nicht gefunden werden.")
 
-    @commands.command()
-    async def member(self, ctx, user: discord.Member = None):
+    @app_commands.command(name="member",
+                          description="Zeigt eine Liste im allen Mitgliedern des Servers oder Details zu einem User an.")
+    @app_commands.describe(user="Nutzer, über den Informationen angezeigt werden sollen.")
+    async def member(self, i: discord.Interaction, user: discord.Member = None):
         if not user:
-            embed = discord.Embed(title=f"Nutzer von {ctx.guild.name}", colour=discord.colour.Colour.blue())
-            member = ctx.guild.members
+            embed = discord.Embed(title=f"Nutzer von {i.guild.name}", colour=discord.colour.Colour.blue())
+            member = i.guild.members
             for user in member:
                 if user.status != discord.Status.offline:
                     member.insert(0, member.pop(member.index(user)))
@@ -128,7 +121,7 @@ class Administration(commands.Cog):
                     embed.add_field(name=STATUS[user.status]+user.name, value=f"**Rollen({len(user.roles ) - 1}): **"+",  ".join([str(r.name) for r in user.roles[1:]]), inline=False)
             if len(member) > 10:
                 embed.set_footer(text=f"Und {len(member) - 11} mehr...")
-            embed.set_thumbnail(url=ctx.guild.icon_url)
+            embed.set_thumbnail(url=i.guild.icon)
         else:
             embed = discord.Embed(title=f"Nutzer {user.display_name}", colour=discord.colour.Colour.blue())
             embed.set_thumbnail(url=user.avatar_url)
@@ -137,14 +130,14 @@ class Administration(commands.Cog):
             embed.add_field(name="Status", value=STATUS[user.status] + str(user.status), inline=False)
             embed.add_field(name=f"Rollen({len(user.roles) - 1})", value="\r\n".join([str(r.name) for r in user.roles[1:]]), inline=True)
             embed.set_footer(text=f"ID: {user.id}")
-        await ctx.send(embed=embed)
+        await i.response.send_message(embed=embed)
 
-    @commands.command(aliases=["c"])
-    async def clear(self, ctx, amount=1):
-        if amount == "all":
-            amount = len(ctx.channel.history(limit=None))
-        await ctx.channel.purge(limit=int(amount) + 1)
-        print(f"{ctx.author.name} hat {amount} Nachrichten in {ctx.guild} gelöscht.")
+    @app_commands.command(name="clear", description="Löscht Nachrichten aus dem aktuellen Channel.")
+    @app_commands.describe(menge="Menge an Nachrichten, die gelöscht werden sollen.")
+    async def clear(self, i: discord.Interaction, menge: int = 1):
+        if menge == "all":
+            menge = len(i.channel.history(limit=None))
+        await i.channel.purge(limit=int(menge) + 1)
 
 
 async def setup(client):

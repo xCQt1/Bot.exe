@@ -1,5 +1,6 @@
 import discord, os, sys, wikipedia, urllib.request, json, requests
 from discord.ext import commands
+from discord import app_commands
 
 
 class Utility(commands.Cog):
@@ -7,32 +8,28 @@ class Utility(commands.Cog):
         self.client = client
         wikipedia.set_lang("de")
 
-    @commands.command()
-    async def wiki(self, ctx, *, arg = None):
-        if arg == None:
-            await ctx.send("Du musst sagen, nach was ich suchen soll.")
-            return
-        await ctx.send(f"Suche nach {arg} auf Wikipedia...")
-        pages = wikipedia.search(arg)
+    @app_commands.command(name="wiki", description="Suche auf Wikipedia nach einem Begriff.")
+    @app_commands.describe(begriff="Der Begriff, nach dem gesucht werden soll.")
+    async def wiki(self, i: discord.Interaction, begriff: str):
+        pages = wikipedia.search(begriff)
         if len(pages) == 0:
-            await ctx.send(f"Es konnten keine Suchergebniss zu {arg} gefunden werden.")
+            await i.response.send_message(f"Es konnten keine Suchergebniss zu {begriff} gefunden werden.")
             return
         page = wikipedia.page(pages[0], auto_suggest=False)
-        result = page.summary
+        result = page.summary[0:1023]
         embed = discord.Embed(title="Wikipedia Suchergebnis", colour=discord.Colour.blue())
-        embed.add_field(name=arg, value=result).set_thumbnail(url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1024px-Wikipedia-logo-v2.svg.png")
-        await ctx.send(embed=embed)
+        embed.set_image(url=page.images[0])
+        embed.add_field(name=begriff, value=result).set_thumbnail(url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1024px-Wikipedia-logo-v2.svg.png")
+        await i.response.send_message(embed=embed)
 
-    @commands.command()
-    async def locateip(self, ctx, ip=None):
-        if ip == None:
-            await ctx.send("Du musst eine IP-Adresse eingeben")
-            return
+    @app_commands.command(name="locateip", description="Sammelt Informationen über die angegebene IPv4-Adresse.")
+    @app_commands.describe(ip="Die IP-Adresse, über die Informationen abgerufen werden sollen.")
+    async def locateip(self, i: discord.Interaction, ip: str):
         api = urllib.request.urlopen(f"http://ipwho.is/{ip}")
         data = json.load(api)
         success = data["success"]
         if not success:
-            await ctx.send("Es konnten keine Informationen zu der IP-Adresse abgerufen werden")
+            await i.response.send_message("Es konnten keine Informationen zu der IP-Adresse abgerufen werden")
             return
         else:
             resp_ip = data["ip"]
@@ -63,40 +60,31 @@ class Utility(commands.Cog):
             embed.add_field(name="Koordinaten:", value=f"{lat}, {lon}", inline=False)
             embed.add_field(name="Vorwahl:", value=phone_code, inline=False)
             embed.set_footer(text="Powered by ipwhois.io")
-            await ctx.send(embed=embed)
+            await i.response.send_message(embed=embed)
 
-    @commands.command()
-    async def shorten(self, ctx, url=None):
-        if url == None:
-            await ctx.send("Du musst einen Link eingeben")
-            return
+    @app_commands.command(name="shorten", description="Kürze einen Link.")
+    @app_commands.describe(link="Der Link, der gekürzt werden soll.")
+    async def shorten(self, i: discord.Interaction, link: str):
         url = "https://url-shortener-service.p.rapidapi.com/shorten"
-        payload = f"url={url}"
+        payload = f"url={link}"
         headers = {
             "content-type": "application/x-www-form-urlencoded",
             "X-RapidAPI-Host": "url-shortener-service.p.rapidapi.com",
             "X-RapidAPI-Key": "4c91651ddemshf86cd633ed15f00p1dcb04jsn1af787c946a9"
         }
-        response = requests.request("POST", url, data=payload, headers=headers)
+        response = requests.request("POST", link, data=payload, headers=headers)
         data = response.json()
         result = data["result_url"]
-        await ctx.send(f"Dein gekürzter Link ist: {result}")
+        await i.response.send_message(f"Dein gekürzter Link ist: {result}")
 
-    @commands.command()
-    async def dm(self, ctx, user: discord.Member, *, content=None):
+    @app_commands.command(name="dm", description="Schreibe einem User eine Direktnachricht.")
+    @app_commands.describe(user="Nutzer", inhalt="Inhalt der Nachricht")
+    async def dm(self, i: discord.Interaction, user: discord.Member, inhalt: str):
         try:
-            await user.send(f"{ctx.author.name} sagt zu dir: {content}")
-            await ctx.send("Deine Nachricht wurde geschickt.")
+            await user.send(f"{i.message.author.name} sagt zu dir: {inhalt}")
+            await i.response.send_message("Deine Nachricht wurde geschickt.")
         except:
-            await ctx.send("Die Nachricht konnte nicht geschickt werden.")
-
-    @commands.command()
-    async def gif(self, ctx, *, args=None):
-        pass
-
-    @commands.command()
-    async def sticker(self, ctx, *, args=None):
-        pass
+            await i.response.send_message("Die Nachricht konnte nicht geschickt werden.")
 
 
 async def setup(client):
