@@ -49,43 +49,6 @@ class Fun(commands.Cog):
         embed.add_field(name=f"{parts[0]}:  {url}", value=parts[1])
         await i.response.send_message(embed=embed)
 
-    @commands.command()
-    async def catgirl(self, i: discord.Interaction):
-        while True:
-            try:
-                api = urllib.request.urlopen("https://www.reddit.com/r/CatgirlSFW.json")
-                data = json.load(api)
-                while True:
-                    pic = data["data"]["children"][random.randint(0, 25)]
-                    purl = pic["data"]["url"]
-                    if purl.endswith(".jpg") or purl.endswith(".png"):
-                        embed = discord.Embed(title="Catgirl", colour=discord.Colour.blue())
-                        embed.set_image(url=purl)
-                        embed.set_footer(text="Powered by: r/CatgirlSFW")
-                        await i.response.send_message(embed=embed)
-                        return
-            except urllib.error.HTTPError as e:
-                await i.response.send_message("Versuche es bitte etwas später nochmal.")
-                return
-
-    @app_commands.command(name="awwnime", description="Schickt ein Anime-Bild aus r/awwnime")
-    async def awwnime(self, i: discord.Interaction):
-        while True:
-            try:
-                api = urllib.request.urlopen("https://www.reddit.com/r/awwnime.json")
-                data = json.load(api)
-                while True:
-                    pic = data["data"]["children"][random.randint(0, 25)]
-                    purl = pic["data"]["url"]
-                    if purl.endswith(".jpg") or purl.endswith(".png"):
-                        embed = discord.Embed(title="Anime", colour=discord.Colour.blue())
-                        embed.set_image(url=purl)
-                        embed.set_footer(text="Powered by: r/awwnime")
-                        await i.response.send_message(embed=embed)
-                        return
-            except urllib.error.HTTPError as e:
-                await i.response.send_message("Versuche es bitte etwas später nochmal")
-
     @app_commands.command(name="idk", description=":shrug:")
     async def idk(self, i: discord.Interaction):
         await i.response.send_message(random.choice(IDKS))

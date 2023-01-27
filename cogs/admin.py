@@ -1,4 +1,4 @@
-import discord
+import discord, asyncio
 from discord.ext import commands
 from discord import app_commands
 from discord import Member
@@ -20,11 +20,10 @@ class Administration(commands.Cog):
     @app_commands.command(name="kick", description="Entfernt einen Nutzer vom Server. Dieser kann wieder beitreten.")
     @app_commands.describe(user="User, der gekickt werden soll.",
                            grund="Grund, aus dem der User gekickt werden soll (z.B. Spamming, etc.).")
-    @app_commands.checks.has_permissions(ban_members=True)
+    @app_commands.checks.has_permissions(kick_members=True)
     async def kick(self, i: discord.Interaction, user: discord.Member, grund: str = None):
-        for member in user:
-            await member.kick(reason=grund)
-        embed = discord.Embed(title=f"{user} wurde(n) von {i.message.author.mention} gekickt.",
+        await user.kick(reason=grund)
+        embed = discord.Embed(title=f"{user.name} wurde(n) von {i.user.name} gekickt.",
                               colour=discord.Colour.dark_red()).add_field(name="Grund:",
                                                                           value=grund)
         await i.response.send_message(embed=embed)
@@ -35,21 +34,21 @@ class Administration(commands.Cog):
     @app_commands.checks.has_permissions(ban_members=True)
     async def ban(self, i: discord.Interaction, user: discord.Member, grund: str = None):
         await user.ban(reason=grund)
-        embed = discord.Embed(title=f"{user.name} wurde(n) von {i.message.author.mention} gebannt.",
+        embed = discord.Embed(title=f"{user.name} wurde von {i.user.name} gebannt.",
                               colour=discord.Colour.dark_red()).add_field(name="Grund:",
                                                                           value=grund)
         await i.response.send_message(embed=embed)
 
     @app_commands.command(name="unban", description="Entbannt einen User. Dieser muss gebannt worden sein.")
     @app_commands.describe(user="User, der entbannt werden soll.")
-    async def unban(self, i: discord.Interaction, user: discord.Member = None):
+    async def unban(self, i: discord.Interaction, user: str):
             banned_users = i.guild.bans()
             member_name, member_discriminator = user.split("#")
             for ban_entry in banned_users:
                 user = ban_entry.user
                 if (user.name, user.discriminator) == (member_name, member_discriminator):
                     await i.guild.unban(user)
-                    await i.response.send_message(f"*{user.name}#{user.discriminator}* wurde von *{i.message.author.name}* wieder entbannt.")
+                    await i.response.send_message(f"*{user.name}#{user.discriminator}* wurde von i.user.name{i.user.name} wieder entbannt.")
                     return
             await i.response.send_message(f"Es konnte niemand mit dem Namen \"{user}\" gefunden werden.")
 
@@ -84,27 +83,27 @@ class Administration(commands.Cog):
 
     @app_commands.command(name="invite", description="Erstellt eine Einladung zu diesem Server und schickt sie dem angegebenen User per DM.")
     @app_commands.describe(user="Nutzer, der eingeladen werden soll.")
-    async def invite(self, ctx, *, user: discord.Member = None):
-        link = await ctx.channel.create_invite(max_age=300)
+    async def invite(self, i: discord.Interaction, user: discord.Member = None):
+        link = await i.channel.create_invite(max_age=300)
         if user == None:
             embed = discord.Embed(title="Einladungslink",
                                   description="Schicke einem User den Link, damit er dem Server beitreten kann.",
                                   colour=discord.colour.Colour.blue())
-            embed.set_thumbnail(url=ctx.guild.icon_url)
+            embed.set_thumbnail(url=i.guild.icon)
             embed.add_field(name="Einladungslink", value=link, inline=True)
-            embed.set_author(name=ctx.author.name)
+            embed.set_author(name=i.user.name)
             embed.set_footer(text="**HuSt**")
-            await ctx.send(embed=embed)
+            await i.response.send_message(embed=embed)
         else:
             try:
-                embed = discord.Embed(title=f"Einladung zu {ctx.guild.name}!",
-                                      description=f"Du wurdest von {ctx.author.name} auf den Server {ctx.guild.name} eingeladen!",
+                embed = discord.Embed(title=f"Einladung zu {i.guild.name}!",
+                                      description=f"Du wurdest von {i.user.name} auf den Server {i.guild.name} eingeladen!",
                                       colour=discord.Colour.blue())
-                embed.set_thumbnail(url=ctx.guild.icon_url)
+                embed.set_thumbnail(url=i.guild.icon)
                 embed.add_field(name="Einladungslink", value=link, inline=True)
                 await user.send(embed=embed)
             except:
-                await ctx.send("Der User konnte nicht gefunden werden.")
+                await i.response.send_message("Der User konnte nicht gefunden werden.")
 
     @app_commands.command(name="member",
                           description="Zeigt eine Liste im allen Mitgliedern des Servers oder Details zu einem User an.")
@@ -113,9 +112,6 @@ class Administration(commands.Cog):
         if not user:
             embed = discord.Embed(title=f"Nutzer von {i.guild.name}", colour=discord.colour.Colour.blue())
             member = i.guild.members
-            for user in member:
-                if user.status != discord.Status.offline:
-                    member.insert(0, member.pop(member.index(user)))
             for user in member[:10]:
                 if not user.name == self.client.user.name:
                     embed.add_field(name=STATUS[user.status]+user.name, value=f"**Rollen({len(user.roles ) - 1}): **"+",  ".join([str(r.name) for r in user.roles[1:]]), inline=False)
@@ -124,7 +120,7 @@ class Administration(commands.Cog):
             embed.set_thumbnail(url=i.guild.icon)
         else:
             embed = discord.Embed(title=f"Nutzer {user.display_name}", colour=discord.colour.Colour.blue())
-            embed.set_thumbnail(url=user.avatar_url)
+            embed.set_thumbnail(url=user.avatar)
             embed.add_field(name="Registriert am", value=user.created_at.strftime("%d. %B %Y um %H:%M:%S"), inline=True)
             embed.add_field(name="Beigetreten am", value=user.joined_at.strftime("%d. %B %Y um %H:%M:%S"), inline=True)
             embed.add_field(name="Status", value=STATUS[user.status] + str(user.status), inline=False)
@@ -135,9 +131,9 @@ class Administration(commands.Cog):
     @app_commands.command(name="clear", description="Löscht Nachrichten aus dem aktuellen Channel.")
     @app_commands.describe(menge="Menge an Nachrichten, die gelöscht werden sollen.")
     async def clear(self, i: discord.Interaction, menge: int = 1):
-        if menge == "all":
-            menge = len(i.channel.history(limit=None))
-        await i.channel.purge(limit=int(menge) + 1)
+        await i.response.defer()
+        await i.channel.purge(limit=int(menge))
+        await i.followup.send(f"{menge} Nachricht(en) gelöscht!")
 
 
 async def setup(client):

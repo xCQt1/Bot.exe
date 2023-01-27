@@ -64,7 +64,7 @@ async def loadCogs():
 async def on_ready():
     await loadCogs()
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,
-                                                           name=f"{PREFIX}help  |  {PREFIX}commands"))
+                                                           name=f"mit /help"))
     print(f"Eingeloggt als: {client.user.name}, bereit.")
     print(f"Ping: {round(client.latency * 1000)} ms")
 
@@ -75,7 +75,7 @@ async def on_member_join(member):
     embed = discord.Embed(title=f"Willkommen auf {member.guild.name}, {member}!",
                           description=f"Falls du Hilfe brauchst, gib {PREFIX}help ein.",
                           colour=discord.Colour.blue())
-    embed.set_thumbnail(url=member.guild.icon_url)
+    embed.set_thumbnail(url=member.guild.icon)
     await channel.send(embed)
     print(f"{member.name} ist dem Server beigetreten.")
 
@@ -115,23 +115,6 @@ async def commands(ctx):
         embed.add_field(name=cog, value=msg, inline=False)
         msg = ""
     await ctx.send(embed=embed)
-
-
-@client.tree.command(name="test")
-@app_commands.describe(option1="Erste Option")
-async def test(i: discord.Interaction, option1: str):
-    await i.response.send_message(option1)
-
-
-@client.tree.command(name="help", description="Eine kurze Hilfe zu diesem Bot")
-async def help(i: discord.Interaction):
-    embed = discord.Embed(title="Hilfe zum Bot", description="Danke, dass du Bot.exe nutzt!",
-                          colour=discord.Colour.blue()).set_thumbnail(url=client.user.avatar)
-    embed.add_field(name="Befehle",
-                    value=f"Befehle sind bestimmte, meist englische, Schlüsselwörter und fangen mit einem Präfix, ```{PREFIX}``` in unserem Fall, an. Für eine Liste aller Befehle, gib ein:```{PREFIX}commands``` ")
-    embed.add_field(name="Bots",
-                    value="Bots sind Discord User, die von einem Programm gesteuert werden. Sie können zum Beispiel auf Nachrichten reagieren und Befehle ausführen.")
-    await i.response.send_message(embed=embed)
 
 
 @client.command()

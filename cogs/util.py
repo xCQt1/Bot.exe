@@ -62,28 +62,14 @@ class Utility(commands.Cog):
             embed.set_footer(text="Powered by ipwhois.io")
             await i.response.send_message(embed=embed)
 
-    @app_commands.command(name="shorten", description="Kürze einen Link.")
-    @app_commands.describe(link="Der Link, der gekürzt werden soll.")
-    async def shorten(self, i: discord.Interaction, link: str):
-        url = "https://url-shortener-service.p.rapidapi.com/shorten"
-        payload = f"url={link}"
-        headers = {
-            "content-type": "application/x-www-form-urlencoded",
-            "X-RapidAPI-Host": "url-shortener-service.p.rapidapi.com",
-            "X-RapidAPI-Key": "4c91651ddemshf86cd633ed15f00p1dcb04jsn1af787c946a9"
-        }
-        response = requests.request("POST", link, data=payload, headers=headers)
-        data = response.json()
-        result = data["result_url"]
-        await i.response.send_message(f"Dein gekürzter Link ist: {result}")
-
     @app_commands.command(name="dm", description="Schreibe einem User eine Direktnachricht.")
     @app_commands.describe(user="Nutzer", inhalt="Inhalt der Nachricht")
     async def dm(self, i: discord.Interaction, user: discord.Member, inhalt: str):
         try:
-            await user.send(f"{i.message.author.name} sagt zu dir: {inhalt}")
+            await user.send(f"{i.user.name} sagt zu dir: {inhalt}")
             await i.response.send_message("Deine Nachricht wurde geschickt.")
-        except:
+        except Exception as e:
+            print(e)
             await i.response.send_message("Die Nachricht konnte nicht geschickt werden.")
 
 
