@@ -11,6 +11,7 @@ class Utility(commands.Cog):
     @app_commands.command(name="wiki", description="Suche auf Wikipedia nach einem Begriff.")
     @app_commands.describe(begriff="Der Begriff, nach dem gesucht werden soll.")
     async def wiki(self, i: discord.Interaction, begriff: str):
+        await i.response.defer()
         pages = wikipedia.search(begriff)
         if len(pages) == 0:
             await i.response.send_message(f"Es konnten keine Suchergebniss zu {begriff} gefunden werden.")
@@ -18,9 +19,9 @@ class Utility(commands.Cog):
         page = wikipedia.page(pages[0], auto_suggest=False)
         result = page.summary[0:1023]
         embed = discord.Embed(title="Wikipedia Suchergebnis", colour=discord.Colour.blue())
-        embed.set_image(url=page.images[0])
-        embed.add_field(name=begriff, value=result).set_thumbnail(url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1024px-Wikipedia-logo-v2.svg.png")
-        await i.response.send_message(embed=embed)
+        embed.set_image(url=page.images[1])
+        embed.add_field(name=page.title, value=result).set_thumbnail(url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1024px-Wikipedia-logo-v2.svg.png")
+        await i.followup.send(embed=embed)
 
     @app_commands.command(name="locateip", description="Sammelt Informationen über die angegebene IPv4-Adresse.")
     @app_commands.describe(ip="Die IP-Adresse, über die Informationen abgerufen werden sollen.")
@@ -67,10 +68,10 @@ class Utility(commands.Cog):
     async def dm(self, i: discord.Interaction, user: discord.Member, inhalt: str):
         try:
             await user.send(f"{i.user.name} sagt zu dir: {inhalt}")
-            await i.response.send_message("Deine Nachricht wurde geschickt.")
+            await i.response.send_message("Deine Nachricht wurde geschickt.", ephemeral=True)
         except Exception as e:
             print(e)
-            await i.response.send_message("Die Nachricht konnte nicht geschickt werden.")
+            await i.response.send_message("Die Nachricht konnte nicht geschickt werden.", ephemeral=True)
 
 
 async def setup(client):

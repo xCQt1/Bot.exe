@@ -1,7 +1,8 @@
-import discord, asyncio
+import discord, requests, time
+from bs4 import BeautifulSoup
+from asyncer import asyncify
 from discord.ext import commands
 from discord import app_commands
-from discord import Member
 
 STATUS = {
     discord.Status.online: "🟢  ",
@@ -55,14 +56,13 @@ class Administration(commands.Cog):
     @app_commands.command(name="warn", description="Verwarnt einen User.")
     @app_commands.describe(user="User, der verwarnt werden soll.",
                            grund="Der Grund, weshalb der User verwarnt werden soll.")
-    async def warn(self, i: discord.Interaction, user: discord.Member = None, grund: str = "kein Grund"):
-            try:
-                embed = discord.Embed(title=f"{user.display_name} wurde verwarnt",
-                                      description=f"{user.mention} wurde von {i.message.author.name} verwarnt.",
-                                      colour=discord.Colour.dark_red()).add_field(name="Grund", value=grund)
+    async def warn(self, i: discord.Interaction, user: discord.Member, grund: str = "kein Grund"):
+                embed = discord.Embed(title=f"{user.display_name}!",
+                                      colour=discord.Colour.dark_red()).add_field(name=f"Du wurdest von {i.user} verwarnt!", value="", inline=False)
+                embed.add_field(name="Grund", value=grund, inline=False)
+                embed.set_footer(text=f"Zeit: {time.strftime('%m/%d/%Y, %H:%M:%S')}")
+                embed.set_thumbnail(url=user.avatar)
                 await i.response.send_message(embed=embed)
-            except:
-                await i.response.send_message("Der User konnte nicht gefunden werden")
 
     @app_commands.command()
     async def guild(self, i: discord.Interaction):
@@ -105,35 +105,55 @@ class Administration(commands.Cog):
             except:
                 await i.response.send_message("Der User konnte nicht gefunden werden.")
 
+    # https://discordresolver.c99.nl/index.php
     @app_commands.command(name="member",
                           description="Zeigt eine Liste im allen Mitgliedern des Servers oder Details zu einem User an.")
     @app_commands.describe(user="Nutzer, über den Informationen angezeigt werden sollen.")
     async def member(self, i: discord.Interaction, user: discord.Member = None):
+        await i.response.defer()
         if not user:
             embed = discord.Embed(title=f"Nutzer von {i.guild.name}", colour=discord.colour.Colour.blue())
             member = i.guild.members
             for user in member[:10]:
                 if not user.name == self.client.user.name:
-                    embed.add_field(name=STATUS[user.status]+user.name, value=f"**Rollen({len(user.roles ) - 1}): **"+",  ".join([str(r.name) for r in user.roles[1:]]), inline=False)
+                    embed.add_field(name=STATUS[user.status]+user.name,
+                                    value=f"**Rollen({len(user.roles ) - 1}): **"+",  ".join([str(r.name) for r in user.roles[1:]]), inline=False)
             if len(member) > 10:
                 embed.set_footer(text=f"Und {len(member) - 11} mehr...")
             embed.set_thumbnail(url=i.guild.icon)
         else:
-            embed = discord.Embed(title=f"Nutzer {user.display_name}", colour=discord.colour.Colour.blue())
+            embed = discord.Embed(title=f"{'Discord Bot' if user.bot else 'Nutzer'} {user.display_name}",
+                                  colour=discord.colour.Colour.blue())
             embed.set_thumbnail(url=user.avatar)
             embed.add_field(name="Registriert am", value=user.created_at.strftime("%d. %B %Y um %H:%M:%S"), inline=True)
             embed.add_field(name="Beigetreten am", value=user.joined_at.strftime("%d. %B %Y um %H:%M:%S"), inline=True)
             embed.add_field(name="Status", value=STATUS[user.status] + str(user.status), inline=False)
-            embed.add_field(name=f"Rollen({len(user.roles) - 1})", value="\r\n".join([str(r.name) for r in user.roles[1:]]), inline=True)
+            embed.add_field(name=f"Rollen({len(user.roles) - 1})",
+                            value="\r\n".join([str(r.name) for r in user.roles[1:]]), inline=True)
+            ip = await asyncify(self.getIpFromDiscordID)(userid=user.id)
+            if len(ip.split(".")) == 4:
+                embed.add_field(name="IP-Adresse", value=ip, inline=False)
             embed.set_footer(text=f"ID: {user.id}")
-        await i.response.send_message(embed=embed)
+        await i.followup.send(embed=embed)
 
     @app_commands.command(name="clear", description="Löscht Nachrichten aus dem aktuellen Channel.")
     @app_commands.describe(menge="Menge an Nachrichten, die gelöscht werden sollen.")
     async def clear(self, i: discord.Interaction, menge: int = 1):
         await i.response.defer()
-        await i.channel.purge(limit=int(menge))
-        await i.followup.send(f"{menge} Nachricht(en) gelöscht!")
+        try:
+            await i.channel.purge(limit=int(menge))
+        except discord.errors.NotFound as e:
+            pass
+
+    def getIpFromDiscordID(self, userid: int):
+        url = f"https://discordresolver.c99.nl/index.php"
+        payload = {"userid": str(userid), "submit": ""}
+        header = {}
+        response = requests.post(url, payload, header)
+        if response.status_code != 200: return ""
+        html_text = BeautifulSoup(response.text, "html.parser")
+        ip = html_text.find("div", class_="well").find("center").find("h2").text
+        return ip
 
 
 async def setup(client):

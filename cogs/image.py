@@ -7,7 +7,7 @@ class Image(commands.GroupCog):
 
     @app_commands.command(name="catgirl", description="Für Eric, damit er sich freut.")
     async def catgirl(self, i: discord.Interaction):
-        await i.response.defer()
+        await i.response.defer(ephemeral=True)
         while True:
             try:
                 api = urllib.request.urlopen("https://www.reddit.com/r/CatgirlSFW.json")
@@ -27,7 +27,7 @@ class Image(commands.GroupCog):
 
     @app_commands.command(name="awwnime", description="Schickt ein Anime-Bild aus r/awwnime")
     async def awwnime(self, i: discord.Interaction):
-        await i.response.defer()
+        await i.response.defer(ephemeral=True)
         while True:
             try:
                 api = urllib.request.urlopen("https://www.reddit.com/r/awwnime.json")

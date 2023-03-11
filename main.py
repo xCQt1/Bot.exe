@@ -1,55 +1,17 @@
+import json
 import os, discord
 from dotenv import load_dotenv
 from discord import app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord.ext.commands import CommandNotFound
 
-
-BASIC = {
-    "help": "Zeigt eine kurze Hilfe zum Bot",
-    "commands": "Das hier.",
-}
-SERVER = {
-    "kick <Nutzer> [Grund]  -   Nur mit Kick-Rechten": "Kickt einen Nutzer",
-    "ban <Nutzer> [Grund]  -   Nur mit Bann-Rechten": "Bannt einen Nutzer",
-    "unban <Nutzer>": "Entbannt einen Nutzer",
-    "warn <Nutzer> [Grund]": "Verwarnt einen Nutzer",
-    "guild": "Zeigt Serverinformationen an",
-    "invite [Nutzer]": "Erstellt eine Einladung für den Server",
-    "member": "Zeigt alle Mitglieder des Servers an.",
-    "clear <Menge>": "Löscht ein paar der letzten Nachrichten",
-}
-UTIL = {
-    "say <Text>": "Papagei.exe",
-    "dm <Nutzer>": "Schickt dem angegebenen Nutzer eine DM.",
-    "locateip <IP-Adresse>": "Zeigt Informationen über die IP-Adresse an",
-    "wiki <Begriff>": "Sucht auf Wikipedia nach einem Begriff",
-    "shorten <Link>": "Kürzt den angegebenen Link",
-    "serverstart": "Startet den Minecraft-Server",
-}
-FUN = {
-    "dnlink": "Schickt einen zufälligen Link ins Darknet",
-    "meme": "Schickt ein zufälliges Meme von Reddit",
-    "catgirl": "Schickt ein Catgirl-Bild",
-    "awwnime": "Schickt ein Anime-Bild",
-    "uwu": "uwu   :point_right::point_left:",
-    "idk": "idk",
-    "say": "Spricht dir nach"
-}
-COMMANDS = {
-    "Grundlegend": BASIC,
-    "Verwaltung:": SERVER,
-    "Utility:": UTIL,
-    "Spaß:": FUN
-}
-
-PREFIX = "!"
-VERSION = "0.6"
 
 intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
-client = commands.Bot(command_prefix=PREFIX, help_command=None, intents=intents.all(), case_insensitive=True)
+client = commands.Bot(command_prefix="!", help_command=None, intents=intents.all(), case_insensitive=True)
+
+guild_data = {}
 
 
 async def loadCogs():
@@ -63,17 +25,30 @@ async def loadCogs():
 @client.event
 async def on_ready():
     await loadCogs()
+    loadFromJson()
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,
-                                                           name=f"mit /help"))
+                                                           name=f"dich an"))
     print(f"Eingeloggt als: {client.user.name}, bereit.")
     print(f"Ping: {round(client.latency * 1000)} ms")
+
+
+@tasks.loop(minutes=10)
+async def saveToJson():
+    with open("guilds.json", "w") as file:
+        json.dump(guild_data, file)
+        file.close()
+
+
+def loadFromJson():
+    with open("guilds.json", "r") as file:
+        guild_data = json.load(file)
+        file.close()
 
 
 @client.event
 async def on_member_join(member):
     channel = discord.utils.get(member.guild.text_channels, name="willkommen")
     embed = discord.Embed(title=f"Willkommen auf {member.guild.name}, {member}!",
-                          description=f"Falls du Hilfe brauchst, gib {PREFIX}help ein.",
                           colour=discord.Colour.blue())
     embed.set_thumbnail(url=member.guild.icon)
     await channel.send(embed)
@@ -97,34 +72,28 @@ async def on_command_error(ctx, error):
 @commands.is_owner()
 async def sync(ctx):
     try:
-        await client.tree.sync()
+        await client.tree.sync(guild=ctx.guild)
         print("Synced.")
     except discord.HTTPException as e:
         print("Syncing fehlgeschlagen: " + e.text)
 
 
-@client.command()
-async def commands(ctx):
-    embed = discord.Embed(title="Befehlsübersicht",
-                          description=f"Um einen Befehl zu nutzen, gib ein ```{PREFIX}<Befehl> [Argumente]```",
-                          colour=discord.Colour.blue())
-    msg = ""
-    for cog in COMMANDS:
-        for command in COMMANDS[cog]:
-            msg += PREFIX + command + "\r\n"
-        embed.add_field(name=cog, value=msg, inline=False)
-        msg = ""
-    await ctx.send(embed=embed)
-
-
-@client.command()
-async def help(ctx):
+@app_commands.command(name="help", description="Zeigt eine Hilfe zum Bot an.")
+async def help(i: discord.Interaction):
     embed = discord.Embed(title="Hilfe zum Bot", description="Danke, dass du Bot.exe nutzt!", colour=discord.Colour.blue())
-    embed.add_field(name="Befehle",
-                    value=f"Befehle sind bestimmte, meist englische, Schlüsselwörter und fangen mit einem Präfix, ```{PREFIX}``` in unserem Fall, an. Für eine Liste aller Befehle, gib ein:```{PREFIX}commands``` ")
-    embed.add_field(name="Bots",
-                    value="Bots sind Discord User, die von einem Programm gesteuert werden. Sie können zum Beispiel auf Nachrichten reagieren und Befehle ausführen.")
-    await ctx.send(embed=embed)
+    if i.guild.id not in guild_data:
+        embed.add_field(name="Gib /start ein, um den Bot einzurichten",
+                        value="Das schaltet alle Befehle und Funktionen des Bots frei!")
+    await i.response.send_message(embed=embed)
+
+
+@app_commands.command(name="start", description="Richtet den Bot für deinen Server ein.")
+@app_commands.checks.has_permissions(administrator=True)
+async def start(i: discord.Interaction):
+    guild_data.append(i.guild_id)
+    client.tree.copy_global_to(guild=i.guild)
+    await client.tree.sync(guild=i.guild)
+    i.response.send_message("Bot.exe ist jetzt auf diesem Server eingerichtet und die volle Funktionalität wurde freigeschaltet!", ephemeral=True)
 
 
 load_dotenv()
