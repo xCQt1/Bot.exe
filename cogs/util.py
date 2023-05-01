@@ -1,6 +1,10 @@
+import time
+
 import discord, os, sys, wikipedia, urllib.request, json, requests
 from discord.ext import commands
 from discord import app_commands
+
+cogColor = discord.Colour.dark_blue()
 
 
 class Utility(commands.Cog):
@@ -18,7 +22,7 @@ class Utility(commands.Cog):
             return
         page = wikipedia.page(pages[0], auto_suggest=False)
         result = page.summary[0:1023]
-        embed = discord.Embed(title="Wikipedia Suchergebnis", colour=discord.Colour.blue())
+        embed = discord.Embed(title="Wikipedia Suchergebnis", colour=cogColor)
         embed.set_image(url=page.images[1])
         embed.add_field(name=page.title, value=result).set_thumbnail(url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1024px-Wikipedia-logo-v2.svg.png")
         await i.followup.send(embed=embed)
@@ -53,7 +57,7 @@ class Utility(commands.Cog):
             else:
                 lon = str(-1 * longitude) + " ° W"
             phone_code = "+" + data["calling_code"]
-            embed = discord.Embed(title=f"Herkunft von {resp_ip}", colour=discord.Colour.blue())
+            embed = discord.Embed(title=f"Herkunft von {resp_ip}", colour=cogColor)
             embed.add_field(name="IP-Typ:", value=type, inline=False)
             embed.add_field(name="Kontinent:", value=continent, inline=False)
             embed.add_field(name="Region:", value=f"{region}({region_code}), {country}({country_code})", inline=False)
@@ -66,12 +70,24 @@ class Utility(commands.Cog):
     @app_commands.command(name="dm", description="Schreibe einem User eine Direktnachricht.")
     @app_commands.describe(user="Nutzer", inhalt="Inhalt der Nachricht")
     async def dm(self, i: discord.Interaction, user: discord.Member, inhalt: str):
+        embed = discord.Embed(title="✉️ Du hast eine Nachricht erhalten!",
+                              description=f"**{i.user.name}** hat dir am **{time.strftime('%m.%d.%Y um %H:%M')}** aus **{i.guild.name}** eine Nachricht geschickt:",
+                              color=cogColor)
+        embed.add_field(name=f"**{inhalt}**", value="", inline=True)
+        embed.set_footer(text="Diese Nachricht wurde mit /dm durch Bot.exe geschickt! Schreibe /botinvite für einen Einladungslink für deinen Server!")
         try:
-            await user.send(f"{i.user.name} sagt zu dir: {inhalt}")
+            await user.send(embed=embed)
             await i.response.send_message("Deine Nachricht wurde geschickt.", ephemeral=True)
         except Exception as e:
             print(e)
             await i.response.send_message("Die Nachricht konnte nicht geschickt werden.", ephemeral=True)
+
+    @app_commands.command(name="botinvite", description="Schickt einen Einladungslink für Bot.exe")
+    @commands.dm_only()
+    async def botinvite(self, i: discord.Interaction):
+        embed = discord.Embed(title="Lade Bot.exe auf deinen Server ein!",
+                              description="Benutze diesen Link, um Bot.exe auf deinen Server einzuladen und dort nutzen zu können!",
+                              color=cogColor)
 
 
 async def setup(client):

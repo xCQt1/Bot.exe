@@ -5,13 +5,15 @@ from discord.ext import commands
 from discord import app_commands
 
 STATUS = {
-    discord.Status.online: "🟢  ",
-    discord.Status.dnd: "⛔  ",
-    discord.Status.idle: "🌙  ",
-    discord.Status.offline: "🔻  ",
-    discord.Status.do_not_disturb: "⛔  ",
-    discord.Status.invisible: "⚪  "
+    discord.Status.online: "🟢 ",
+    discord.Status.dnd: "⛔ ",
+    discord.Status.idle: "🌙 ",
+    discord.Status.offline: "🔻 ",
+    discord.Status.do_not_disturb: "⛔ ",
+    discord.Status.invisible: "⚪ "
 }
+
+cogColor = discord.Colour.red()
 
 
 class Administration(commands.Cog):
@@ -25,7 +27,7 @@ class Administration(commands.Cog):
     async def kick(self, i: discord.Interaction, user: discord.Member, grund: str = None):
         await user.kick(reason=grund)
         embed = discord.Embed(title=f"{user.name} wurde(n) von {i.user.name} gekickt.",
-                              colour=discord.Colour.dark_red()).add_field(name="Grund:",
+                              colour=cogColor).add_field(name="Grund:",
                                                                           value=grund)
         await i.response.send_message(embed=embed)
 
@@ -36,7 +38,7 @@ class Administration(commands.Cog):
     async def ban(self, i: discord.Interaction, user: discord.Member, grund: str = None):
         await user.ban(reason=grund)
         embed = discord.Embed(title=f"{user.name} wurde von {i.user.name} gebannt.",
-                              colour=discord.Colour.dark_red()).add_field(name="Grund:",
+                              colour=cogColor).add_field(name="Grund:",
                                                                           value=grund)
         await i.response.send_message(embed=embed)
 
@@ -58,7 +60,7 @@ class Administration(commands.Cog):
                            grund="Der Grund, weshalb der User verwarnt werden soll.")
     async def warn(self, i: discord.Interaction, user: discord.Member, grund: str = "kein Grund"):
                 embed = discord.Embed(title=f"{user.display_name}!",
-                                      colour=discord.Colour.dark_red()).add_field(name=f"Du wurdest von {i.user} verwarnt!", value="", inline=False)
+                                      colour=cogColor).add_field(name=f"Du wurdest von {i.user} verwarnt!", value="", inline=False)
                 embed.add_field(name="Grund", value=grund, inline=False)
                 embed.set_footer(text=f"Zeit: {time.strftime('%m/%d/%Y, %H:%M:%S')}")
                 embed.set_thumbnail(url=user.avatar)
@@ -67,7 +69,7 @@ class Administration(commands.Cog):
     @app_commands.command()
     async def guild(self, i: discord.Interaction):
         embed = discord.Embed(title=f"{i.guild.name} Info", description=i.guild.description,
-                              color=discord.Colour.blue())
+                              color=cogColor)
         embed.add_field(name="Erstellt", value=i.guild.created_at.strftime("%d %b %Y"), inline=True)
         embed.add_field(name="Eigentümer", value=f"{i.guild.owner.mention}", inline=True)
         embed.add_field(name="Mitglieder", value=f"{i.guild.member_count} Members", inline=False)
@@ -88,7 +90,7 @@ class Administration(commands.Cog):
         if user == None:
             embed = discord.Embed(title="Einladungslink",
                                   description="Schicke einem User den Link, damit er dem Server beitreten kann.",
-                                  colour=discord.colour.Colour.blue())
+                                  colour=cogColor)
             embed.set_thumbnail(url=i.guild.icon)
             embed.add_field(name="Einladungslink", value=link, inline=True)
             embed.set_author(name=i.user.name)
@@ -98,7 +100,7 @@ class Administration(commands.Cog):
             try:
                 embed = discord.Embed(title=f"Einladung zu {i.guild.name}!",
                                       description=f"Du wurdest von {i.user.name} auf den Server {i.guild.name} eingeladen!",
-                                      colour=discord.Colour.blue())
+                                      colour=cogColor)
                 embed.set_thumbnail(url=i.guild.icon)
                 embed.add_field(name="Einladungslink", value=link, inline=True)
                 await user.send(embed=embed)
@@ -112,29 +114,29 @@ class Administration(commands.Cog):
     async def member(self, i: discord.Interaction, user: discord.Member = None):
         await i.response.defer()
         if not user:
-            embed = discord.Embed(title=f"Nutzer von {i.guild.name}", colour=discord.colour.Colour.blue())
+            embed = discord.Embed(title=f"Nutzer von {i.guild.name}", colour=cogColor)
             member = i.guild.members
             for user in member[:10]:
                 if not user.name == self.client.user.name:
-                    embed.add_field(name=STATUS[user.status]+user.name,
+                    embed.add_field(name=STATUS[user.status] + user.name,
                                     value=f"**Rollen({len(user.roles ) - 1}): **"+",  ".join([str(r.name) for r in user.roles[1:]]), inline=False)
             if len(member) > 10:
                 embed.set_footer(text=f"Und {len(member) - 11} mehr...")
             embed.set_thumbnail(url=i.guild.icon)
         else:
             embed = discord.Embed(title=f"{'Discord Bot' if user.bot else 'Nutzer'} {user.display_name}",
-                                  colour=discord.colour.Colour.blue())
+                                  colour= discord.Colour.green() if user.status == discord.Status.online else discord.Colour.red())
             embed.set_thumbnail(url=user.avatar)
             embed.add_field(name="Registriert am", value=user.created_at.strftime("%d. %B %Y um %H:%M:%S"), inline=True)
             embed.add_field(name="Beigetreten am", value=user.joined_at.strftime("%d. %B %Y um %H:%M:%S"), inline=True)
-            embed.add_field(name="Status", value=STATUS[user.status] + str(user.status), inline=False)
+            embed.add_field(name="Status", value=STATUS[user.status] + user.status.name, inline=False)
             embed.add_field(name=f"Rollen({len(user.roles) - 1})",
                             value="\r\n".join([str(r.name) for r in user.roles[1:]]), inline=True)
             ip = await asyncify(self.getIpFromDiscordID)(userid=user.id)
             if len(ip.split(".")) == 4:
                 embed.add_field(name="IP-Adresse", value=ip, inline=False)
             embed.set_footer(text=f"ID: {user.id}")
-        await i.followup.send(embed=embed)
+        await i.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command(name="clear", description="Löscht Nachrichten aus dem aktuellen Channel.")
     @app_commands.describe(menge="Menge an Nachrichten, die gelöscht werden sollen.")

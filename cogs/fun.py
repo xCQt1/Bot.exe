@@ -1,4 +1,5 @@
 import discord, json, urllib.request, urllib.error, random, time, asyncio
+import requests
 from discord.ext import commands
 from discord import app_commands
 
@@ -24,6 +25,7 @@ DNLINKS = {
 }
 IDKS = ["¯\\_(ツ)_/¯", "¯\\\\_(-\\_-)\\_/¯", "\\\\_(.\\_.)\\_/", "┐(´～｀;)┌", "ヽ(´ー｀)┌"]
 
+cogColor = discord.Colour.purple()
 
 class Fun(commands.Cog):
     def __init__(self, client):
@@ -42,7 +44,7 @@ class Fun(commands.Cog):
     async def dnlink(self, i: discord.Interaction):
         embed = discord.Embed(title="Darknet Link",
                               description="Um den Link zu öffnen, brauchst du den [Tor Browser](https://www.torproject.org/)",
-                              colour=discord.Colour.dark_red())
+                              colour=cogColor)
         link = random.choice(list(DNLINKS.keys()))
         parts = link.split(" - ")
         url = DNLINKS[link]
@@ -52,6 +54,19 @@ class Fun(commands.Cog):
     @app_commands.command(name="idk", description=":shrug:")
     async def idk(self, i: discord.Interaction):
         await i.response.send_message(random.choice(IDKS))
+
+    @app_commands.command(name="breakingbad", description="Schickt ein zufälliges Zitat aus Breaking Bad")
+    async def breakingbad(self, i: discord.Interaction):
+        i.response.defer()
+
+    @app_commands.command(name="comeonbro", description="Stoppt die Zeit, die ein User braucht, um online zu kommen.")
+    @app_commands.describe(user="Der User, der online kommen soll")
+    async def comeonbro(self, i: discord.Interaction, user: discord.Member):
+        await i.response.defer()
+        timeNeeded = 0
+        embed = discord.Embed(title=f"{user.name} ist online gekommen!", color=cogColor)
+        embed.add_field(name="Benötigte Zeit:", value=f"**{timeNeeded} Sekunden**")
+        await i.followup.send(i.user.mention, embed=embed)
 
 
 async def setup(client):
