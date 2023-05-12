@@ -15,7 +15,7 @@ class Help(commands.GroupCog):
     @app_commands.command(name="info", description="Infos zu Bot.exe")
     async def info(self, i: discord.Interaction):
         embed = discord.Embed(title="Hilfe zum Bot", description="Danke, dass du Bot.exe nutzt!",
-                              colour=discord.Colour.blue())
+                              colour=cogColor)
         embed.add_field(name="Was ist Bot.exe?",
                         value="Bot.exe ist ein Discord-Bot, der darauf abzielt, dich als User zu unterstützen und zu unterhalten!",
                         inline=True)

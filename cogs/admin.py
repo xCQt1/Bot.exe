@@ -4,6 +4,8 @@ from asyncer import asyncify
 from discord.ext import commands
 from discord import app_commands
 
+import JSONHandler
+
 STATUS = {
     discord.Status.online: "🟢 ",
     discord.Status.dnd: "⛔ ",
@@ -27,8 +29,7 @@ class Administration(commands.Cog):
     async def kick(self, i: discord.Interaction, user: discord.Member, grund: str = None):
         await user.kick(reason=grund)
         embed = discord.Embed(title=f"{user.name} wurde(n) von {i.user.name} gekickt.",
-                              colour=cogColor).add_field(name="Grund:",
-                                                                          value=grund)
+                              colour=cogColor).add_field(name="Grund:", value=grund)
         await i.response.send_message(embed=embed)
 
     @app_commands.command(name="ban", description="Entfernt User dauerhaft vom Server.")
@@ -38,11 +39,10 @@ class Administration(commands.Cog):
     async def ban(self, i: discord.Interaction, user: discord.Member, grund: str = None):
         await user.ban(reason=grund)
         embed = discord.Embed(title=f"{user.name} wurde von {i.user.name} gebannt.",
-                              colour=cogColor).add_field(name="Grund:",
-                                                                          value=grund)
+                              colour=cogColor).add_field(name="Grund:", value=grund)
         await i.response.send_message(embed=embed)
 
-    @app_commands.command(name="unban", description="Entbannt einen User. Dieser muss gebannt worden sein.")
+    @app_commands.command(name="unban", description="Entbannt einen User. Dieser muss davor gebannt worden sein.")
     @app_commands.describe(user="User, der entbannt werden soll.")
     async def unban(self, i: discord.Interaction, user: str):
             banned_users = i.guild.bans()
@@ -59,12 +59,16 @@ class Administration(commands.Cog):
     @app_commands.describe(user="User, der verwarnt werden soll.",
                            grund="Der Grund, weshalb der User verwarnt werden soll.")
     async def warn(self, i: discord.Interaction, user: discord.Member, grund: str = "kein Grund"):
-                embed = discord.Embed(title=f"{user.display_name}!",
-                                      colour=cogColor).add_field(name=f"Du wurdest von {i.user} verwarnt!", value="", inline=False)
-                embed.add_field(name="Grund", value=grund, inline=False)
-                embed.set_footer(text=f"Zeit: {time.strftime('%m/%d/%Y, %H:%M:%S')}")
-                embed.set_thumbnail(url=user.avatar)
-                await i.response.send_message(embed=embed)
+        warns = await JSONHandler.getWarns(i.user, i.guild)
+        embed = discord.Embed(title=f"{user.display_name}!",
+                                  colour=cogColor).add_field(name=f"Du wurdest von {i.user} verwarnt!", value="", inline=False)
+        embed.add_field(name="Grund", value=grund, inline=False)
+        embed.add_field(name="Bisherige Verwarnungen:", value=warns)
+        embed.set_footer(text=f"Zeit: {time.strftime('%m/%d/%Y, %H:%M:%S')}")
+        embed.set_thumbnail(url=user.avatar)
+        await i.response.send_message(embed=embed)
+        await JSONHandler.addWarn(i.user, i.guild)
+
 
     @app_commands.command()
     async def guild(self, i: discord.Interaction):
@@ -107,7 +111,6 @@ class Administration(commands.Cog):
             except:
                 await i.response.send_message("Der User konnte nicht gefunden werden.")
 
-    # https://discordresolver.c99.nl/index.php
     @app_commands.command(name="member",
                           description="Zeigt eine Liste im allen Mitgliedern des Servers oder Details zu einem User an.")
     @app_commands.describe(user="Nutzer, über den Informationen angezeigt werden sollen.")

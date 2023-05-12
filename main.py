@@ -1,5 +1,5 @@
 import json
-import os, discord
+import os, discord, JSONHandler
 from dotenv import load_dotenv
 from discord import app_commands
 from discord.ext import commands
@@ -7,9 +7,10 @@ from discord.ext.commands import CommandNotFound
 
 
 intents = discord.Intents.default()
+intents.guilds = True
 intents.members = True
 intents.message_content = True
-client = commands.Bot(command_prefix="!", intents=intents.all(), case_insensitive=True)
+client = commands.Bot(command_prefix="!", intents=intents)
 client.remove_command("help")
 
 
@@ -24,10 +25,16 @@ async def loadCogs():
 @client.event
 async def on_ready():
     await loadCogs()
+    await JSONHandler.loadJSONData()
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,
                                                            name=f"dich an"))
     print(f"Eingeloggt als: {client.user.name}, bereit.")
     print(f"Ping: {round(client.latency * 1000)} ms")
+
+
+@client.event
+async def on_guild_join(guild: discord.Guild):
+    await JSONHandler.addGuild(guild)
 
 
 @client.event

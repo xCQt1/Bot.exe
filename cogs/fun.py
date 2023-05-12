@@ -1,5 +1,4 @@
 import discord, json, urllib.request, urllib.error, random, time, asyncio
-import requests
 from discord.ext import commands
 from discord import app_commands
 
@@ -63,7 +62,11 @@ class Fun(commands.Cog):
     @app_commands.describe(user="Der User, der online kommen soll")
     async def comeonbro(self, i: discord.Interaction, user: discord.Member):
         await i.response.defer()
-        timeNeeded = 0
+        await i.followup.send(f"{user.mention}, deine Zeit läuft!")
+        startTime = time.time()
+        while user.status == discord.Status.offline:
+            pass
+        timeNeeded = time.time() - startTime
         embed = discord.Embed(title=f"{user.name} ist online gekommen!", color=cogColor)
         embed.add_field(name="Benötigte Zeit:", value=f"**{timeNeeded} Sekunden**")
         await i.followup.send(i.user.mention, embed=embed)

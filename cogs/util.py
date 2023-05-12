@@ -5,6 +5,7 @@ from discord.ext import commands
 from discord import app_commands
 
 cogColor = discord.Colour.dark_blue()
+invurl = "https://canary.discord.com/api/oauth2/authorize?client_id=976538058826612746&permissions=8&scope=bot"
 
 
 class Utility(commands.Cog):
@@ -22,7 +23,7 @@ class Utility(commands.Cog):
             return
         page = wikipedia.page(pages[0], auto_suggest=False)
         result = page.summary[0:1023]
-        embed = discord.Embed(title="Wikipedia Suchergebnis", colour=cogColor)
+        embed = discord.Embed(title="Wikipedia Suchergebnis", colour=cogColor, type="article")
         embed.set_image(url=page.images[1])
         embed.add_field(name=page.title, value=result).set_thumbnail(url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1024px-Wikipedia-logo-v2.svg.png")
         await i.followup.send(embed=embed)
@@ -83,11 +84,12 @@ class Utility(commands.Cog):
             await i.response.send_message("Die Nachricht konnte nicht geschickt werden.", ephemeral=True)
 
     @app_commands.command(name="botinvite", description="Schickt einen Einladungslink für Bot.exe")
-    @commands.dm_only()
     async def botinvite(self, i: discord.Interaction):
         embed = discord.Embed(title="Lade Bot.exe auf deinen Server ein!",
                               description="Benutze diesen Link, um Bot.exe auf deinen Server einzuladen und dort nutzen zu können!",
                               color=cogColor)
+        embed.add_field(name=invurl, value="")
+        await i.response.send_message(embed=embed)
 
 
 async def setup(client):

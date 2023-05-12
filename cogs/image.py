@@ -20,7 +20,7 @@ class Image(commands.GroupCog):
                 while True:
                     purl = data["data"]["children"][random.randint(0, 25)]["data"]["url"]
                     if purl.endswith(".jpg") or purl.endswith(".png"):
-                        embed = discord.Embed(title="Catgirl", colour=cogColor)
+                        embed = discord.Embed(title="Catgirl", colour=cogColor, type="article")
                         embed.set_image(url=purl)
                         embed.set_footer(text="Powered by: r/CatgirlSFW")
                         await i.followup.send(embed=embed)
@@ -32,21 +32,20 @@ class Image(commands.GroupCog):
     @app_commands.command(name="awwnime", description="Auch für Eric, damit er sich noch mehr freut")
     async def awwnime(self, i: discord.Interaction):
         await i.response.defer(ephemeral=True)
-        while True:
-            try:
-                api = urllib.request.urlopen("https://www.reddit.com/r/awwnime.json")
-                data = json.load(api)
-                while True:
-                    pic = data["data"]["children"][random.randint(0, 25)]
-                    purl = pic["data"]["url"]
-                    if purl.endswith(".jpg") or purl.endswith(".png"):
-                        embed = discord.Embed(title="Anime", colour=cogColor)
-                        embed.set_image(url=purl)
-                        embed.set_footer(text="Powered by: r/awwnime")
-                        await i.followup.send(embed=embed)
-                        return
-            except urllib.error.HTTPError as e:
-                await i.followup.send("Versuche es bitte etwas später nochmal")
+        try:
+            api = urllib.request.urlopen("https://www.reddit.com/r/awwnime.json")
+            data = json.load(api)
+            while True:
+                pic = data["data"]["children"][random.randint(0, 25)]
+                purl = pic["data"]["url"]
+                if purl.endswith(".jpg") or purl.endswith(".png"):
+                    embed = discord.Embed(title="Anime", colour=cogColor, type="image")
+                    embed.set_image(url=purl)
+                    embed.set_footer(text="Powered by: r/awwnime")
+                    await i.followup.send(embed=embed)
+                    return
+        except urllib.error.HTTPError as e:
+            await i.followup.send("Versuche es bitte etwas später nochmal")
 
 
 async def setup(client):
