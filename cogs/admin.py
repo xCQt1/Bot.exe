@@ -2,7 +2,8 @@ import discord, requests, time
 from bs4 import BeautifulSoup
 from asyncer import asyncify
 from discord.ext import commands
-from discord import app_commands
+from typing import Literal, Union
+from discord import app_commands, CategoryChannel
 
 import JSONHandler
 
@@ -164,8 +165,7 @@ class Administration(commands.Cog):
         except:
             await i.response.send_message("Der Channel konnte nicht geöffnet werden.")
 
-
-    def getIpFromDiscordID(self, userid: int):
+    def getIpFromDiscordID(self, userid: int) -> str:
         url = f"https://discordresolver.c99.nl/index.php"
         payload = {"userid": str(userid), "submit": ""}
         header = {}
@@ -175,6 +175,33 @@ class Administration(commands.Cog):
         html_text = BeautifulSoup(response.text, "html.parser")
         ip = html_text.find("div", class_="well").find("center").find("h2").text
         return ip
+
+    channels = app_commands.Group(name="channel",
+                                  description="Verwaltung von Channels",
+                                  default_permissions=discord.Permissions(manage_channels=True),
+                                  guild_only=True)
+
+    @channels.command(name="create", description="Erstellt einen Channel")
+    async def create(self, i: discord.Interaction, type: Literal["Text Channel", "Voice Channel", "Stage Channel", "Forum Channel"], name: str = "Channel", nsfw: bool = False, news: bool = False):
+        try:
+            match type:
+                case "Text Channel": await i.guild.create_text_channel(name=name, nsfw=nsfw, news=news) # , category=category
+                case "Voice Channel": await i.guild.create_voice_channel(name=name)
+                case "Stage Channel": await i.guild.create_stage_channel(name=name)
+                case "Forum Channel": await i.guild.create_forum(name=name, nsfw=nsfw)
+            embed = discord.Embed(description=f"Der {type} {name} wurde erstellt!", color=cogColor)
+            await i.response.send_message(embed=embed)
+        except:
+            await i.response.send_message(f"Der Channel {name} konnte nicht erstellt werden.")
+
+    @channels.command(name="remove", description="Entfernt einen Channel")
+    async def remove(self, i: discord.Interaction, channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel, discord.ForumChannel]):
+        try:
+            await channel.delete()
+            embed = discord.Embed(description=f"Der Channel {channel.name} wurde gelöscht.", color=cogColor)
+            await i.response.send_message(embed=embed)
+        except:
+            await i.response.send_message("Der Channel konnte nicht gelöscht werden.")
 
 
 async def setup(client):
