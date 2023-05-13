@@ -24,22 +24,22 @@ class Administration(commands.Cog):
 
     @app_commands.command(name="kick", description="Entfernt einen Nutzer vom Server. Dieser kann wieder beitreten.")
     @app_commands.describe(user="User, der gekickt werden soll.",
-                           grund="Grund, aus dem der User gekickt werden soll (z.B. Spamming, etc.).")
+                           reason="Grund, aus dem der User gekickt werden soll (z.B. Spamming, etc.).")
     @app_commands.checks.has_permissions(kick_members=True)
-    async def kick(self, i: discord.Interaction, user: discord.Member, grund: str = None):
-        await user.kick(reason=grund)
+    async def kick(self, i: discord.Interaction, user: discord.Member, reason: str = "Nicht angegeben"):
+        await user.kick(reason=reason)
         embed = discord.Embed(title=f"{user.name} wurde(n) von {i.user.name} gekickt.",
-                              colour=cogColor).add_field(name="Grund:", value=grund)
+                              colour=cogColor).add_field(name="Grund:", value=reason)
         await i.response.send_message(embed=embed)
 
     @app_commands.command(name="ban", description="Entfernt User dauerhaft vom Server.")
     @app_commands.describe(user="User, der gebannt werden soll.",
-                           grund="Der Grund, aus dem der User gebannt werden soll.")
+                           reason="Der Grund, aus dem der User gebannt werden soll.")
     @app_commands.checks.has_permissions(ban_members=True)
-    async def ban(self, i: discord.Interaction, user: discord.Member, grund: str = None):
-        await user.ban(reason=grund)
+    async def ban(self, i: discord.Interaction, user: discord.Member, reason: str = "Nicht angegeben"):
+        await user.ban(reason=reason)
         embed = discord.Embed(title=f"{user.name} wurde von {i.user.name} gebannt.",
-                              colour=cogColor).add_field(name="Grund:", value=grund)
+                              colour=cogColor).add_field(name="Grund:", value=reason)
         await i.response.send_message(embed=embed)
 
     @app_commands.command(name="unban", description="Entbannt einen User. Dieser muss davor gebannt worden sein.")
@@ -57,12 +57,12 @@ class Administration(commands.Cog):
 
     @app_commands.command(name="warn", description="Verwarnt einen User.")
     @app_commands.describe(user="User, der verwarnt werden soll.",
-                           grund="Der Grund, weshalb der User verwarnt werden soll.")
-    async def warn(self, i: discord.Interaction, user: discord.Member, grund: str = "kein Grund"):
+                           reason="Der Grund, weshalb der User verwarnt werden soll.")
+    async def warn(self, i: discord.Interaction, user: discord.Member, reason: str = "kein Grund"):
         warns = await JSONHandler.getWarns(i.user, i.guild)
         embed = discord.Embed(title=f"{user.display_name}!",
                                   colour=cogColor).add_field(name=f"Du wurdest von {i.user} verwarnt!", value="", inline=False)
-        embed.add_field(name="Grund", value=grund, inline=False)
+        embed.add_field(name="Grund", value=reason, inline=False)
         embed.add_field(name="Bisherige Verwarnungen:", value=warns)
         embed.set_footer(text=f"Zeit: {time.strftime('%m/%d/%Y, %H:%M:%S')}")
         embed.set_thumbnail(url=user.avatar)
@@ -81,35 +81,21 @@ class Administration(commands.Cog):
                         value=str(len(i.guild.roles)-1),
                         inline=True)
         embed.add_field(name="Anzahl der Channel",
-                        value=f"{len(i.guild.text_channels)} Text + {len(i.guild.voice_channels)} Voice",
+                        value=f"{len(i.guild.text_channels)} Text \r\n {len(i.guild.voice_channels)} Voice",
                         inline=True)
         embed.set_thumbnail(url=i.guild.icon)
         embed.set_footer(text=f"ID: {i.guild.id}")
         await i.response.send_message(embed=embed)
 
     @app_commands.command(name="invite", description="Erstellt eine Einladung zu diesem Server und schickt sie dem angegebenen User per DM.")
-    @app_commands.describe(user="Nutzer, der eingeladen werden soll.")
-    async def invite(self, i: discord.Interaction, user: discord.Member = None):
+    async def invite(self, i: discord.Interaction):
         link = await i.channel.create_invite(max_age=300)
-        if user == None:
-            embed = discord.Embed(title="Einladungslink",
-                                  description="Schicke einem User den Link, damit er dem Server beitreten kann.",
-                                  colour=cogColor)
-            embed.set_thumbnail(url=i.guild.icon)
-            embed.add_field(name="Einladungslink", value=link, inline=True)
-            embed.set_author(name=i.user.name)
-            embed.set_footer(text="**HuSt**")
-            await i.response.send_message(embed=embed)
-        else:
-            try:
-                embed = discord.Embed(title=f"Einladung zu {i.guild.name}!",
-                                      description=f"Du wurdest von {i.user.name} auf den Server {i.guild.name} eingeladen!",
-                                      colour=cogColor)
-                embed.set_thumbnail(url=i.guild.icon)
-                embed.add_field(name="Einladungslink", value=link, inline=True)
-                await user.send(embed=embed)
-            except:
-                await i.response.send_message("Der User konnte nicht gefunden werden.")
+        embed = discord.Embed(title="Einladungslink",
+                              description="Schicke einem User den Link, damit er dem Server beitreten kann.",
+                              colour=cogColor)
+        embed.set_thumbnail(url=i.guild.icon)
+        embed.add_field(name="Einladungslink", value=link, inline=True)
+        await i.response.send_message(embed=embed)
 
     @app_commands.command(name="member",
                           description="Zeigt eine Liste im allen Mitgliedern des Servers oder Details zu einem User an.")
@@ -150,12 +136,42 @@ class Administration(commands.Cog):
         except discord.errors.NotFound as e:
             pass
 
+    @app_commands.command(name="lock_channel", description="Schließt den Channel für eine Rolle.")
+    @app_commands.describe(channel="Channel, der geschlossen werden soll.", role="Eine bestimmte Rolle, für die der Channel geschlossen werden soll.")
+    async def lock_channel(self, i: discord.Interaction, channel: discord.TextChannel = None, role: discord.Role = None):
+        if channel is None:
+            channel = i.channel
+        if role is None:
+            role = i.guild.default_role
+        try:
+            await channel.set_permissions(role, send_messages=False)
+            embed = discord.Embed(description=f"{channel.name} wurde für {role.name} geschlossen!", color=cogColor)
+            await i.response.send_message(embed=embed)
+        except:
+            await i.response.send_message("Der Channel konnte nicht geschlossen werden.")
+
+    @app_commands.command(name="unlock_channel", description="Öffnet den Channel für eine Rolle.")
+    @app_commands.describe(channel="Channel, der geöffnte werden soll.", role="Eine bestimmte Rolle, für die der Channel geöffnet werden soll.")
+    async def unlock_channel(self, i: discord.Interaction, channel: discord.TextChannel = None, role: discord.Role = None):
+        if channel is None:
+            channel = i.channel
+        if role is None:
+            role = i.guild.default_role
+        try:
+            await channel.set_permissions(role, send_messages=True)
+            embed = discord.Embed(description=f"{channel.name} wurde für {role.name} geöffnet.", color=cogColor)
+            await i.response.send_message(embed=embed)
+        except:
+            await i.response.send_message("Der Channel konnte nicht geöffnet werden.")
+
+
     def getIpFromDiscordID(self, userid: int):
         url = f"https://discordresolver.c99.nl/index.php"
         payload = {"userid": str(userid), "submit": ""}
         header = {}
         response = requests.post(url, payload, header)
-        if response.status_code != 200: return ""
+        if response.status_code != 200:
+            return ""
         html_text = BeautifulSoup(response.text, "html.parser")
         ip = html_text.find("div", class_="well").find("center").find("h2").text
         return ip

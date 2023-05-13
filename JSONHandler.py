@@ -1,6 +1,4 @@
-import json
-
-import discord
+import json, discord
 
 guilddata = {"GUILD_ID": {"USER_ID":"INT WARNS",
                           "USER2_ID": "INT WARNS"}}
@@ -26,11 +24,22 @@ async def addGuild(guild: discord.Guild):
 
 
 async def addWarn(user: discord.User, guild: discord.Guild):
-    try:
-        guilddata.get(str(guild.id)).get(str(user.id)).replace(int(guilddata.get(str(guild.id)).get(str(user.id))) + 1)
-    except KeyError as e:
-        guilddata.get(str(guild.id)).update({str(user.id): 1})
+    guildWarns = guilddata.get(str(guild.id))
+    if guildWarns is None:
+        await addGuild(guild)
+    guildWarns = guilddata.get(str(guild.id))
+    warns = guildWarns.get(str(user.id))
+    if warns is None:
+        guildWarns.get(str(guild.id)).update({str(user.id): 1})
+    else:
+        guildWarns.get(str(guild.id)).update({str(user.id): int(warns) + 1})
 
 
 async def getWarns(user: discord.User, guild: discord.Guild):
-    return guilddata.get(str(guild.id)).get(str(user.id))
+    guildWarns = guilddata.get(str(guild.id))
+    if guildWarns is None:
+        await addGuild(guild)
+        warns = 0
+    else:
+        warns = guildWarns.get(str(user.id))
+    return warns
