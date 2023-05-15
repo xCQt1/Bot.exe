@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from discord.ui import Button, View
 from discord import app_commands
+from typing import Literal
 
 cogColor = discord.Colour.red()
 githubLink = "https://github.com/xCQt1/Bot.exe"

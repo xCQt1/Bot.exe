@@ -70,8 +70,7 @@ class Administration(commands.Cog):
         await i.response.send_message(embed=embed)
         await JSONHandler.addWarn(i.user, i.guild)
 
-
-    @app_commands.command()
+    @app_commands.command(name="guild", description="Zeigt Infos über den Server")
     async def guild(self, i: discord.Interaction):
         embed = discord.Embed(title=f"{i.guild.name} Info", description=i.guild.description,
                               color=cogColor)
@@ -129,13 +128,70 @@ class Administration(commands.Cog):
         await i.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command(name="clear", description="Löscht Nachrichten aus dem aktuellen Channel.")
-    @app_commands.describe(menge="Menge an Nachrichten, die gelöscht werden sollen.")
-    async def clear(self, i: discord.Interaction, menge: int = 1):
+    @app_commands.default_permissions(manage_messages=True)
+    @app_commands.describe(amount="Menge an Nachrichten, die gelöscht werden sollen.",
+                           keyword="Wort, das wenn eine Nachricht enthält, sie gelöscht werden soll.",
+                           user="Spezifischer Nutzer, dessen Nachrichten gelöscht werden sollen.")
+    async def clear(self, i: discord.Interaction, amount: int = 1, keyword: str = None, user: discord.User = None):
         await i.response.defer()
+        if amount < 1: await i.response.send_message(embed=discord.Embed(description="Die Menge muss größer als 0 sein.", color=cogColor))
+        if amount > 100: await i.response.send_message(embed=discord.Embed(description="Du kannst nur maximal 100 Nachrichten auf einmal löschen.", color=cogColor))
+
+        notPinned = lambda message: message.pinned is False
+        containsKey = lambda message: message.content.__contains__(keyword)
+        isFromUser = lambda message: message.author.id == user.id
+
         try:
-            await i.channel.purge(limit=int(menge))
+            if user is None and keyword is None:
+                await i.channel.purge(limit=int(amount+1), check=notPinned)
+            if user and keyword is None:
+                await i.channel.purge(limit=int(amount+1), check=notPinned and isFromUser)
+            if user is None and keyword:
+                await i.channel.purge(limit=int(amount+1), check=notPinned and containsKey)
+            if user and keyword:
+                await i.channel.purge(limit=int(amount+1), check=notPinned and isFromUser and containsKey)
+
+            await i.followup.send(embed=discord.Embed(description=f"Es wurden {amount} Nachrichten in {i.channel.name} gelöscht!"))
         except discord.errors.NotFound as e:
-            pass
+            await i.followup.send(embed=discord.Embed(description=f"Die Nachrichten konnten nicht gelöscht werden."))
+
+    def getIpFromDiscordID(self, userid: int) -> str:
+        url = f"https://discordresolver.c99.nl/index.php"
+        payload = {"userid": str(userid), "submit": ""}
+        header = {}
+        response = requests.post(url, payload, header)
+        if response.status_code != 200:
+            return ""
+        html_text = BeautifulSoup(response.text, "html.parser")
+        ip = html_text.find("div", class_="well").find("center").find("h2").text
+        return ip
+
+    channels = app_commands.Group(name="channel",
+                                  description="Verwaltung von Channels",
+                                  default_permissions=discord.Permissions(manage_channels=True),
+                                  guild_only=True)
+
+    @channels.command(name="create", description="Erstellt einen Channel")
+    async def create(self, i: discord.Interaction, type: Literal["Text Channel", "Voice Channel", "Stage Channel", "Forum Channel"], name: str = "Channel", nsfw: bool = False, news: bool = False):
+        try:
+            match type:
+                case "Text Channel": await i.guild.create_text_channel(name=name, nsfw=nsfw, news=news)
+                case "Voice Channel": await i.guild.create_voice_channel(name=name)
+                case "Stage Channel": await i.guild.create_stage_channel(name=name)
+                case "Forum Channel": await i.guild.create_forum(name=name, nsfw=nsfw)
+            embed = discord.Embed(description=f"Der {type} {name} wurde erstellt!", color=cogColor)
+            await i.response.send_message(embed=embed)
+        except:
+            await i.response.send_message(f"Der Channel {name} konnte nicht erstellt werden.")
+
+    @channels.command(name="remove", description="Entfernt einen Channel")
+    async def remove(self, i: discord.Interaction, channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel, discord.ForumChannel]):
+        try:
+            await channel.delete()
+            embed = discord.Embed(description=f"Der Channel {channel.name} wurde gelöscht.", color=cogColor)
+            await i.response.send_message(embed=embed)
+        except:
+            await i.response.send_message("Der Channel konnte nicht gelöscht werden.")
 
     @app_commands.command(name="lock_channel", description="Schließt den Channel für eine Rolle.")
     @app_commands.describe(channel="Channel, der geschlossen werden soll.", role="Eine bestimmte Rolle, für die der Channel geschlossen werden soll.")
@@ -164,44 +220,6 @@ class Administration(commands.Cog):
             await i.response.send_message(embed=embed)
         except:
             await i.response.send_message("Der Channel konnte nicht geöffnet werden.")
-
-    def getIpFromDiscordID(self, userid: int) -> str:
-        url = f"https://discordresolver.c99.nl/index.php"
-        payload = {"userid": str(userid), "submit": ""}
-        header = {}
-        response = requests.post(url, payload, header)
-        if response.status_code != 200:
-            return ""
-        html_text = BeautifulSoup(response.text, "html.parser")
-        ip = html_text.find("div", class_="well").find("center").find("h2").text
-        return ip
-
-    channels = app_commands.Group(name="channel",
-                                  description="Verwaltung von Channels",
-                                  default_permissions=discord.Permissions(manage_channels=True),
-                                  guild_only=True)
-
-    @channels.command(name="create", description="Erstellt einen Channel")
-    async def create(self, i: discord.Interaction, type: Literal["Text Channel", "Voice Channel", "Stage Channel", "Forum Channel"], name: str = "Channel", nsfw: bool = False, news: bool = False):
-        try:
-            match type:
-                case "Text Channel": await i.guild.create_text_channel(name=name, nsfw=nsfw, news=news) # , category=category
-                case "Voice Channel": await i.guild.create_voice_channel(name=name)
-                case "Stage Channel": await i.guild.create_stage_channel(name=name)
-                case "Forum Channel": await i.guild.create_forum(name=name, nsfw=nsfw)
-            embed = discord.Embed(description=f"Der {type} {name} wurde erstellt!", color=cogColor)
-            await i.response.send_message(embed=embed)
-        except:
-            await i.response.send_message(f"Der Channel {name} konnte nicht erstellt werden.")
-
-    @channels.command(name="remove", description="Entfernt einen Channel")
-    async def remove(self, i: discord.Interaction, channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel, discord.ForumChannel]):
-        try:
-            await channel.delete()
-            embed = discord.Embed(description=f"Der Channel {channel.name} wurde gelöscht.", color=cogColor)
-            await i.response.send_message(embed=embed)
-        except:
-            await i.response.send_message("Der Channel konnte nicht gelöscht werden.")
 
 
 async def setup(client):
