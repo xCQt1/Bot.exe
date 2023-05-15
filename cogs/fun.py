@@ -74,7 +74,7 @@ class Fun(commands.Cog):
         response = requests.get(url=memeUrl)
         jsonData = response.json()
         try:
-            embed = discord.Embed(title=jsonData["title"]).set_image(url=jsonData["preview"][3])
+            embed = discord.Embed(title=jsonData["title"]).set_image(url=jsonData["preview"][3]).set_author(name=f"{jsonData['author']} - r/{jsonData['subreddit']}")
         except IndexError:
             embed = discord.Embed(description="Das hat leider nicht geklappt!")
         await i.response.send_message(embed=embed)
