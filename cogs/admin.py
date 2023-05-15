@@ -3,9 +3,7 @@ from bs4 import BeautifulSoup
 from asyncer import asyncify
 from discord.ext import commands
 from typing import Literal, Union
-from discord import app_commands, CategoryChannel
-
-import JSONHandler
+from discord import app_commands
 
 STATUS = {
     discord.Status.online: "🟢 ",

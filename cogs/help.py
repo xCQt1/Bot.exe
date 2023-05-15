@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
-from discord.ui import Button, View
-from discord import app_commands
+from discord.ui import Button, View, Select
+from discord import app_commands, SelectOption
 from typing import Literal
 
 cogColor = discord.Colour.red()
@@ -30,11 +30,24 @@ class Help(commands.GroupCog):
 
     @app_commands.command(name="links", description="Links zum Bot")
     async def links(self, i: discord.Interaction):
-        buttonGH = Button(label="GitHub", style=discord.ButtonStyle.gray, url=githubLink)
-        view = View().add_item(buttonGH)
         embed = discord.Embed(title="Links", color=cogColor)
         embed.add_field(name="GitHub", value="Bot.exe ist auf GitHub! Dort kann man sich den Quellcode ansehen und bei der Entwicklung helfen.")
+        view = View().add_item(Button(label="GitHub", style=discord.ButtonStyle.gray, url=githubLink))
         await i.response.send_message(embed=embed, view=view)
+
+    @app_commands.command(name="commands", description="Eine Übersicht über alle Commands.")
+    async def commands(self, i: discord.Interaction):
+        pass
+
+    class CommandsSelect(Select):
+
+        def __init__(self, client: discord.Client):
+            super().__init__(
+                placeholder="Wähle eine Kategorie",
+                options=[
+                    SelectOption(label="Administration", description="")
+                ]
+            )
 
 
 async def setup(client):

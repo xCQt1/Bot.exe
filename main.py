@@ -1,5 +1,5 @@
 import json
-import os, discord, JSONHandler
+import os, discord
 from dotenv import load_dotenv
 from discord import app_commands
 from discord.ext import commands
@@ -25,7 +25,6 @@ async def loadCogs():
 @client.event
 async def on_ready():
     await loadCogs()
-    await JSONHandler.loadJSONData()
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,
                                                            name=f"dich an"))
     print(f"Eingeloggt als: {client.user.name}, bereit.")
@@ -34,7 +33,7 @@ async def on_ready():
 
 @client.event
 async def on_guild_join(guild: discord.Guild):
-    await JSONHandler.addGuild(guild)
+    pass
 
 
 @client.event

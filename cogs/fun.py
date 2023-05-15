@@ -1,4 +1,5 @@
 import discord, json, urllib.request, urllib.error, random, time, asyncio
+import requests
 from discord.ext import commands
 from discord import app_commands
 
@@ -23,6 +24,7 @@ DNLINKS = {
     "Torch - A search engine for the darkweb": "http://xmh57jrzrnw6insl.onion/"
 }
 IDKS = ["¯\\_(ツ)_/¯", "¯\\\\_(-\\_-)\\_/¯", "\\\\_(.\\_.)\\_/", "┐(´～｀;)┌", "ヽ(´ー｀)┌"]
+memeUrl = "https://meme-api.com/gimme"
 
 cogColor = discord.Colour.purple()
 
@@ -55,7 +57,7 @@ class Fun(commands.Cog):
         await i.response.send_message(random.choice(IDKS))
 
     @app_commands.command(name="comeonbro", description="Stoppt die Zeit, die ein User braucht, um online zu kommen.")
-    @app_commands.describe(user="Der User, der online kommen soll")
+    @app_commands.describe(user="User, der online kommen soll")
     async def comeonbro(self, i: discord.Interaction, user: discord.Member):
         await i.response.defer()
         await i.followup.send(f"{user.mention}, deine Zeit läuft!")
@@ -66,6 +68,18 @@ class Fun(commands.Cog):
         embed = discord.Embed(title=f"{user.name} ist online gekommen!", color=cogColor)
         embed.add_field(name="Benötigte Zeit:", value=f"**{timeNeeded} Sekunden**")
         await i.followup.send(i.user.mention, embed=embed)
+
+    @app_commands.command(name="meme", description="Schickt ein Meme von Reddit")
+    async def meme(self, i: discord.Interaction):
+        response = requests.get(url=memeUrl)
+        jsonData = response.json()
+        try:
+            embed = discord.Embed(title=jsonData["title"]).set_image(url=jsonData["preview"][3])
+        except IndexError:
+            embed = discord.Embed(description="Das hat leider nicht geklappt!")
+        await i.response.send_message(embed=embed)
+
+
 
     image = app_commands.Group(name="image", description="Commands, die Bilder aus Subreddits schicken können.")
 
