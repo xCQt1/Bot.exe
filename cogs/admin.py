@@ -56,20 +56,6 @@ class Administration(commands.Cog):
                     return
             await i.response.send_message(f"Es konnte niemand mit dem Namen \"{user}\" gefunden werden.")
 
-    @app_commands.command(name="warn", description="Verwarnt einen User.")
-    @app_commands.describe(user="User, der verwarnt werden soll.",
-                           reason="Der Grund, weshalb der User verwarnt werden soll.")
-    async def warn(self, i: discord.Interaction, user: discord.Member, reason: str = "kein Grund"):
-        warns = await JSONHandler.getWarns(i.user, i.guild)
-        embed = discord.Embed(title=f"{user.display_name}!",
-                                  colour=cogColor).add_field(name=f"Du wurdest von {i.user} verwarnt!", value="", inline=False)
-        embed.add_field(name="Grund", value=reason, inline=False)
-        embed.add_field(name="Bisherige Verwarnungen:", value=warns)
-        embed.set_footer(text=f"Zeit: {time.strftime('%m/%d/%Y, %H:%M:%S')}")
-        embed.set_thumbnail(url=user.avatar)
-        await i.response.send_message(embed=embed)
-        await JSONHandler.addWarn(i.user, i.guild)
-
     @app_commands.command(name="guild", description="Zeigt Infos über den Server")
     async def guild(self, i: discord.Interaction):
         embed = discord.Embed(title=f"{i.guild.name} Info", description=i.guild.description,
