@@ -121,20 +121,19 @@ class Administration(commands.Cog):
         if amount < 1: await i.response.send_message(embed=discord.Embed(description="Die Menge muss größer als 0 sein.", color=cogColor))
         if amount > 100: await i.response.send_message(embed=discord.Embed(description="Du kannst nur maximal 100 Nachrichten auf einmal löschen.", color=cogColor))
 
-        notPinned = lambda message: message.pinned is False
+        basicCheck = lambda message: message.pinned is False and message != i.message
         containsKey = lambda message: message.content.__contains__(keyword)
         isFromUser = lambda message: message.author.id == user.id
 
         try:
             if user is None and keyword is None:
-                await i.channel.purge(limit=int(amount+1), check=notPinned)
+                await i.channel.purge(limit=int(amount+1), check=basicCheck)
             if user and keyword is None:
-                await i.channel.purge(limit=int(amount+1), check=notPinned and isFromUser)
+                await i.channel.purge(limit=int(amount+1), check=basicCheck and isFromUser)
             if user is None and keyword:
-                await i.channel.purge(limit=int(amount+1), check=notPinned and containsKey)
+                await i.channel.purge(limit=int(amount+1), check=basicCheck and containsKey)
             if user and keyword:
-                await i.channel.purge(limit=int(amount+1), check=notPinned and isFromUser and containsKey)
-
+                await i.channel.purge(limit=int(amount+1), check=basicCheck and isFromUser and containsKey)
             await i.followup.send(embed=discord.Embed(description=f"Es wurden {amount} Nachrichten in {i.channel.name} gelöscht!"))
         except discord.errors.NotFound as e:
             await i.followup.send(embed=discord.Embed(description=f"Die Nachrichten konnten nicht gelöscht werden."))

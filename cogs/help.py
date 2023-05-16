@@ -44,10 +44,15 @@ class Help(commands.GroupCog):
         def __init__(self, client: discord.Client):
             super().__init__(
                 placeholder="Wähle eine Kategorie",
+                min_values=1,
+                max_values=1,
                 options=[
-                    SelectOption(label="Administration", description="")
+                    SelectOption(label="Administration"),
+                    SelectOption(label=""),
+                    SelectOption(label="")
                 ]
             )
+            
 
 
 async def setup(client):

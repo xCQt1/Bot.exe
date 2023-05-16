@@ -1,7 +1,6 @@
 import json
-import os, discord
+import os, discord, platform
 from dotenv import load_dotenv
-from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound
 
@@ -27,7 +26,13 @@ async def on_ready():
     await loadCogs()
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,
                                                            name=f"dich an"))
-    print(f"Eingeloggt als: {client.user.name}, bereit.")
+    await printInfos()
+
+
+async def printInfos():
+    print(f"Eingeloggt als {client.user.name}")
+    print(f"Bot ID: {client.user.id}")
+    print(f"Discord.py Version {discord.__version__}, Python {str(platform.version())}")
     print(f"Ping: {round(client.latency * 1000)} ms")
 
 

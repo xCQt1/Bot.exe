@@ -79,8 +79,6 @@ class Fun(commands.Cog):
             embed = discord.Embed(description="Das hat leider nicht geklappt!")
         await i.response.send_message(embed=embed)
 
-
-
     image = app_commands.Group(name="image", description="Commands, die Bilder aus Subreddits schicken können.")
 
     @image.command(name="catgirl", description="Für Eric, damit er sich freut")
