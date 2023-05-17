@@ -2,13 +2,14 @@ import json
 import os, discord, platform
 from dotenv import load_dotenv
 from discord.ext import commands
-from discord.ext.commands import CommandNotFound
+from discord.ext.commands import CommandNotFound, UserNotFound, RoleNotFound, ChannelNotFound, BotMissingPermissions, GuildNotFound
 
 
 intents = discord.Intents.default()
 intents.guilds = True
 intents.members = True
 intents.message_content = True
+intents.messages = True
 client = commands.Bot(command_prefix="!", intents=intents)
 client.remove_command("help")
 
@@ -24,8 +25,7 @@ async def loadCogs():
 @client.event
 async def on_ready():
     await loadCogs()
-    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,
-                                                           name=f"dich an"))
+    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f"dich an"))
     await printInfos()
 
 
@@ -55,13 +55,25 @@ async def on_member_join(member):
 async def on_message(message):
     if message.author.bot:
         return
-    await client.process_commands(message)
+    if client.user.mentioned_in(message):
+        await message.channel.send()
+    else:
+        await client.process_commands(message)
 
 
 @client.event
 async def on_command_error(ctx, error):
     if isinstance(error, CommandNotFound):
         await ctx.send("Der Befehl konnte nicht gefunden werden.")
+    if isinstance(error, UserNotFound):
+        await ctx.send("Dieser User konnte nicht gefunden werden.")
+    if isinstance(error, ChannelNotFound):
+        await ctx.send("Dieser Channel konnte nicht gefunden werden.")
+    if isinstance(error, GuildNotFound):
+        await ctx.send("Dieser Server konnte nicht gefunden werden.")
+    if isinstance(error, BotMissingPermissions):
+        await ctx.send("Für diese Aktion fehlen mir Berechtigungen.")
+        await client.get_user(ctx.guild.owner_id).send(embed=discord.Embed(title=f"Es gibt ein Problem in {ctx.guild.name}!", description="Bitte gib Bot.exe Administrator-Rechte, damit alle Befehle fehlerfrei funktionieren!"))
 
 
 @client.command()
