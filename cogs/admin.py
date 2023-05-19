@@ -1,9 +1,10 @@
 import discord, requests, time
 from bs4 import BeautifulSoup
 from asyncer import asyncify
+from discord.ui import Select, UserSelect, RoleSelect, View
 from discord.ext import commands
 from typing import Literal, Union
-from discord import app_commands
+from discord import app_commands, SelectOption
 
 STATUS = {
     discord.Status.online: "🟢 ",
@@ -203,6 +204,40 @@ class Administration(commands.Cog):
             await i.response.send_message(embed=embed)
         except:
             await i.response.send_message("Der Channel konnte nicht geöffnet werden.")
+
+    role = app_commands.Group(name="role",
+                              description="Verwaltung von Rollen",
+                              default_permissions=discord.Permissions(manage_roles=True),
+                              guild_only=True)
+
+    @role.command(name="create", description="Erstellt eine neue Rolle.")
+    async def create(self, i: discord.Interaction, name: str = "Rolle", mentionable: bool = True):
+        await i.guild.create_role(name=name, mentionable=mentionable)
+        await i.response.send_message(embed=discord.Embed(description=f"Die Rolle {name} wurde erfolgreich erstellt!"))
+
+    @role.command(name="assign", description="Weise anderen Usern eine Rolle zu.")
+    async def assign(self, i: discord.Interaction):
+        pass
+
+    @role.command(name="delete", description="Löscht eine Rolle")
+    async def delete(self, i: discord.Interaction):
+        view = self.RoleSelectView()
+        await i.response.send_message(embed=discord.Embed(description="Wähle eine Rolle aus, die du löschen möchtest."), view=view)
+
+    class RoleSelectView(View):
+        class MyRoleSelect(RoleSelect):
+            def __init__(self):
+                super().__init__()
+                self.placeholder = "Wähle eine Rolle!"
+
+            async def callback(self, i: discord.Interaction):
+                await self.values[0].delete()
+                await i.response.send_message(embed=discord.Embed(description=f"Die Rolle {self.values[0].name} wurde erfolgreich gelöscht!"))
+
+        def __init__(self):
+            super().__init__()
+            select = self.MyRoleSelect()
+            self.add_item(select)
 
 
 async def setup(client):
