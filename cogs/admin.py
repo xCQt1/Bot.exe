@@ -216,8 +216,9 @@ class Administration(commands.Cog):
         await i.response.send_message(embed=discord.Embed(description=f"Die Rolle {name} wurde erfolgreich erstellt!"))
 
     @role.command(name="assign", description="Weise anderen Usern eine Rolle zu.")
-    async def assign(self, i: discord.Interaction):
-        pass
+    async def assign(self, i: discord.Interaction, role: discord.Role):
+        view = self.AssignRoleUserSelect(role=role)
+        await i.response.send_message(view=view, embed=discord.Embed(description="Wähle User aus!"))
 
     @role.command(name="delete", description="Löscht eine Rolle")
     async def delete(self, i: discord.Interaction):
@@ -231,12 +232,33 @@ class Administration(commands.Cog):
                 self.placeholder = "Wähle eine Rolle!"
 
             async def callback(self, i: discord.Interaction):
-                await self.values[0].delete()
+                for role in self.values:
+                    await role.delete()
                 await i.response.send_message(embed=discord.Embed(description=f"Die Rolle {self.values[0].name} wurde erfolgreich gelöscht!"))
 
         def __init__(self):
             super().__init__()
             select = self.MyRoleSelect()
+            self.add_item(select)
+
+
+    class AssignRoleUserSelect(View):
+        class UserSelect(UserSelect):
+            role: discord.Role
+            def __init__(self, role: discord.Role):
+                super().__init__()
+                self.role = role
+                self.placeholder = "Wähle bis zu 20 Nutzer!"
+                self.max_values = 20
+
+            async def callback(self, i: discord.Interaction):
+                for user in self.values:
+                    await user.add_roles(self.role)
+                await i.response.send_message(embed=discord.Embed(description=f"Die Rolle {self.role.name} wurde erfolgreich {len(self.values)} Usern zugewiesen!"))
+
+        def __init__(self, role: discord.Role):
+            super().__init__()
+            select = self.UserSelect(role)
             self.add_item(select)
 
 

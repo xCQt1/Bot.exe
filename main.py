@@ -30,10 +30,10 @@ async def on_ready():
 
 
 async def printInfos():
-    print(f"Eingeloggt als {client.user.name}")
-    print(f"Bot ID: {client.user.id}")
-    print(f"Discord.py Version {discord.__version__}, Python {str(platform.version())}")
-    print(f"Ping: {round(client.latency * 1000)} ms")
+    print(f"Eingeloggt als {client.user.name}!")
+    print(f" -->    Bot ID: {client.user.id}")
+    print(f" -->    Discord.py Version {discord.__version__}, Python {str(platform.version())}")
+    print(f" -->    Ping: {round(client.latency * 1000)} ms")
 
 
 @client.event
