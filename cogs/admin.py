@@ -227,39 +227,32 @@ class Administration(commands.Cog):
         await i.response.send_message(embed=discord.Embed(description="Wähle eine Rolle aus, die du löschen möchtest."), view=view)
 
     class RoleSelectView(View):
-        class MyRoleSelect(RoleSelect):
-            def __init__(self):
-                super().__init__()
-                self.placeholder = "Wähle eine Rolle!"
-
-            async def callback(self, i: discord.Interaction):
-                for role in self.values:
-                    await role.delete()
-                await i.response.send_message(embed=discord.Embed(description=f"Die Rolle {self.values[0].name} wurde erfolgreich gelöscht!"))
-
         def __init__(self):
             super().__init__()
-            select = self.MyRoleSelect()
-            self.add_item(select)
+
+        @discord.ui.select(cls=RoleSelect, placeholder="Wähle eine Rolle!")
+        async def roleDeleteCallback(self, i: discord.Interaction, select: Select):
+            select.disabled = True
+            await select.values[0].delete()
+            await i.response.edit_message(view=self)
+            await i.followup.send(embed=discord.Embed(description=f"Die Rolle {select.values[0].name} wurde erfolgreich gelöscht!"))
 
     class AssignRoleUserSelect(View):
-        class UserSelect(UserSelect):
-            role: discord.Role
-            def __init__(self, role: discord.Role):
-                super().__init__()
-                self.role = role
-                self.placeholder = "Wähle bis zu 20 Nutzer!"
-                self.max_values = 20
-
-            async def callback(self, i: discord.Interaction):
-                for user in self.values:
-                    await user.add_roles(self.role)
-                await i.response.send_message(embed=discord.Embed(description=f"Die Rolle {self.role.name} wurde erfolgreich {len(self.values)} Usern zugewiesen!"))
+        role: discord.Role
 
         def __init__(self, role: discord.Role):
             super().__init__()
-            select = self.UserSelect(role)
-            self.add_item(select)
+            self.role = role
+
+        @discord.ui.select(cls=UserSelect, placeholder="Wähle bis zu 20 User!", max_values=20)
+        async def callback(self, i: discord.Interaction, select: Select, ):
+            select.disabled = True
+            for user in select.values:
+                print(user)
+                await user.add_roles(self.role)
+            await i.response.edit_message(view=self)
+            await i.followup.send(embed=discord.Embed(
+                description=f"Die Rolle {self.role.name} wurde erfolgreich {len(select.values)} Usern zugewiesen!"))
 
 
 async def setup(client):
