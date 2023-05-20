@@ -10,6 +10,7 @@ intents.guilds = True
 intents.members = True
 intents.message_content = True
 intents.messages = True
+intents.presences = True
 client = commands.Bot(command_prefix="!", intents=intents)
 client.remove_command("help")
 
