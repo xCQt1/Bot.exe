@@ -1,26 +1,25 @@
 import json
-import os, discord, platform
+import os, discord, sys, config
 from dotenv import load_dotenv
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound, UserNotFound, RoleNotFound, ChannelNotFound, BotMissingPermissions, GuildNotFound
 
 
-intents = discord.Intents.default()
-intents.guilds = True
-intents.members = True
-intents.message_content = True
-intents.messages = True
-intents.presences = True
+intents = discord.Intents.all()
 client = commands.Bot(command_prefix="!", intents=intents)
 client.remove_command("help")
+
+logger = config.logging.getLogger("bot")
+
+TOKEN = config.DISCORD_TOKEN
 
 
 async def loadCogs():
     for file in os.listdir("cogs"):
         if file.endswith(".py"):
             await client.load_extension(f"cogs.{file[:-3]}")
-            print(f"{file} geladen")
-    print("Alle Module geladen\n\r")
+            logger.info(f"{file} geladen")
+    logger.info("Alle Module geladen!")
 
 
 @client.event
@@ -31,10 +30,10 @@ async def on_ready():
 
 
 async def printInfos():
-    print(f"Eingeloggt als {client.user.name}!")
-    print(f" -->    Bot ID: {client.user.id}")
-    print(f" -->    Discord.py Version {discord.__version__}, Python {str(platform.version())}")
-    print(f" -->    Ping: {round(client.latency * 1000)} ms")
+    logger.info(f"Eingeloggt als {client.user.name}!")
+    logger.info(f" -->    Bot ID: {client.user.id}")
+    logger.info(f" -->    Versionen: Discord.py {discord.__version__}, Python {str(sys.version.split(' ')[0])}")
+    logger.info(f" -->    Ping: {round(client.latency * 1000)} ms")
 
 
 @client.event
@@ -89,6 +88,4 @@ async def sync(ctx):
     except discord.HTTPException as e:
         print("Syncing fehlgeschlagen: " + e.text)
 
-
-load_dotenv()
-client.run(os.getenv("TOKEN"))
+client.run(TOKEN, root_logger=True)
