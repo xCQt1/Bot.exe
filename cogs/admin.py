@@ -1,10 +1,11 @@
 import discord, requests, time
+from classes import AssignRoleUserSelect, RoleSelectView
 from bs4 import BeautifulSoup
 from asyncer import asyncify
 from discord.ui import Select, UserSelect, RoleSelect, View
 from discord.ext import commands
 from typing import Literal, Union
-from discord import app_commands, SelectOption
+from discord import app_commands
 
 STATUS = {
     discord.Status.online: "🟢 ",
@@ -217,49 +218,14 @@ class Administration(commands.Cog):
 
     @role.command(name="assign", description="Weise anderen Usern eine Rolle zu.")
     async def assign(self, i: discord.Interaction, role: discord.Role):
-        view = self.AssignRoleUserSelect(role=role)
+        view = AssignRoleUserSelect(role=role)
         await i.response.send_message(view=view, embed=discord.Embed(description="Wähle User aus!"))
 
     @role.command(name="delete", description="Löscht eine Rolle")
     async def delete(self, i: discord.Interaction):
-        view = self.RoleSelectView()
-        await i.response.send_message(embed=discord.Embed(description="Wähle eine Rolle aus, die du löschen möchtest."), view=view)
-
-    class RoleSelectView(View):
-        class MyRoleSelect(RoleSelect):
-            def __init__(self):
-                super().__init__()
-                self.placeholder = "Wähle eine Rolle!"
-
-            async def callback(self, i: discord.Interaction):
-                for role in self.values:
-                    await role.delete()
-                await i.response.send_message(embed=discord.Embed(description=f"Die Rolle {self.values[0].name} wurde erfolgreich gelöscht!"))
-
-        def __init__(self):
-            super().__init__()
-            select = self.MyRoleSelect()
-            self.add_item(select)
-
-
-    class AssignRoleUserSelect(View):
-        class UserSelect(UserSelect):
-            role: discord.Role
-            def __init__(self, role: discord.Role):
-                super().__init__()
-                self.role = role
-                self.placeholder = "Wähle bis zu 20 Nutzer!"
-                self.max_values = 20
-
-            async def callback(self, i: discord.Interaction):
-                for user in self.values:
-                    await user.add_roles(self.role)
-                await i.response.send_message(embed=discord.Embed(description=f"Die Rolle {self.role.name} wurde erfolgreich {len(self.values)} Usern zugewiesen!"))
-
-        def __init__(self, role: discord.Role):
-            super().__init__()
-            select = self.UserSelect(role)
-            self.add_item(select)
+        view = RoleSelectView()
+        await i.response.send_message(embed=discord.Embed(description="Wähle eine Rolle aus, die du löschen möchtest."),
+                                      view=view)
 
 
 async def setup(client):
