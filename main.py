@@ -1,6 +1,4 @@
-import json
 import os, discord, sys, config
-from dotenv import load_dotenv
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound, UserNotFound, RoleNotFound, ChannelNotFound, BotMissingPermissions, GuildNotFound
 
@@ -40,7 +38,7 @@ async def printInfos():
 async def on_guild_join(guild: discord.Guild):
     client.tree.copy_global_to(guild=guild)
     await client.tree.sync(guild=guild)
-    print(f"{guild.name} beigetreten: Synced!")
+    logger.info(f"{guild.name} beigetreten: Synced!")
 
 
 @client.event
@@ -50,15 +48,15 @@ async def on_member_join(member: discord.Member):
                           colour=discord.Colour.blue())
     embed.set_thumbnail(url=member.guild.icon)
     await channel.send(embed=embed)
-    print(f"{member.name} ist dem Server beigetreten.")
+    logger.info(f"{member.name} ist dem Server {member.guild.name} beigetreten.")
 
 
 @client.event
-async def on_message(message):
+async def on_message(message: discord.Message):
     if message.author.bot:
         return
     if client.user.mentioned_in(message):
-        await message.channel.send()
+        await message.channel.send("Ja genau.")
     else:
         await client.process_commands(message)
 

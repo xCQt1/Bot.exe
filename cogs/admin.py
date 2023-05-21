@@ -28,6 +28,9 @@ class Administration(commands.Cog):
                            reason="Grund, aus dem der User gekickt werden soll (z.B. Spamming, etc.).")
     @app_commands.checks.has_permissions(kick_members=True)
     async def kick(self, i: discord.Interaction, user: discord.Member, reason: str = "Nicht angegeben"):
+        if user.id == self.client.user.id:
+            await i.response.send_message(embed=discord.Embed(description="Du kannst Bot.exe nicht kicken."))
+            return
         await user.kick(reason=reason)
         embed = discord.Embed(title=f"{user.name} wurde(n) von {i.user.name} gekickt.",
                               colour=cogColor).add_field(name="Grund:", value=reason)
@@ -38,6 +41,9 @@ class Administration(commands.Cog):
                            reason="Der Grund, aus dem der User gebannt werden soll.")
     @app_commands.checks.has_permissions(ban_members=True)
     async def ban(self, i: discord.Interaction, user: discord.Member, reason: str = "Nicht angegeben"):
+        if user.id == self.client.user.id:
+            await i.response.send_message(embed=discord.Embed(description="Du kannst Bot.exe nicht bannen."))
+            return
         await user.ban(reason=reason)
         embed = discord.Embed(title=f"{user.name} wurde von {i.user.name} gebannt.",
                               colour=cogColor).add_field(name="Grund:", value=reason)

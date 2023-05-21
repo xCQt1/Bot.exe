@@ -9,7 +9,7 @@ DISCORD_TOKEN = os.getenv("TOKEN")
 
 LOGGING_CONFIG = {
     "version": 1,
-    "disable_existing_loggers": True,
+    "disable_existing_loggers": False,
     "formatters": {
         "verbose": {
             "format": "%(levelname)-10s - %(asctime)s - %(module)-15s : %(message)s"
@@ -50,5 +50,5 @@ LOGGING_CONFIG = {
         }
     }
 }
-dictConfig(LOGGING_CONFIG)
 
+dictConfig(LOGGING_CONFIG)
