@@ -1,3 +1,5 @@
+import logging
+from logging import handlers
 import os, discord, sys, config
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound, UserNotFound, RoleNotFound, ChannelNotFound, BotMissingPermissions, GuildNotFound
@@ -7,8 +9,6 @@ intents = discord.Intents.all()
 client = commands.Bot(command_prefix="!", intents=intents)
 client.remove_command("help")
 
-logger = config.logging.getLogger("bot")
-
 TOKEN = config.DISCORD_TOKEN
 
 
@@ -16,8 +16,8 @@ async def loadCogs():
     for file in os.listdir("cogs"):
         if file.endswith(".py"):
             await client.load_extension(f"cogs.{file[:-3]}")
-            logger.info(f"{file} geladen")
-    logger.info("Alle Module geladen!")
+            print(f"{file} geladen")
+    print("Alle Module geladen!")
 
 
 @client.event
@@ -28,17 +28,17 @@ async def on_ready():
 
 
 async def printInfos():
-    logger.info(f"Eingeloggt als {client.user.name}!")
-    logger.info(f" -->    Bot ID: {client.user.id}")
-    logger.info(f" -->    Versionen: Discord.py {discord.__version__}, Python {str(sys.version.split(' ')[0])}")
-    logger.info(f" -->    Ping: {round(client.latency * 1000)} ms")
+    print(f"Eingeloggt als {client.user.name}!")
+    print(f" -->    Bot ID: {client.user.id}")
+    print(f" -->    Versionen: Discord.py {discord.__version__}, Python {str(sys.version.split(' ')[0])}")
+    print(f" -->    Ping: {round(client.latency * 1000)} ms")
 
 
 @client.event
 async def on_guild_join(guild: discord.Guild):
     client.tree.copy_global_to(guild=guild)
     await client.tree.sync(guild=guild)
-    logger.info(f"{guild.name} beigetreten: Synced!")
+    print(f"{guild.name} beigetreten: Synced!")
 
 
 @client.event
@@ -48,15 +48,13 @@ async def on_member_join(member: discord.Member):
                           colour=discord.Colour.blue())
     embed.set_thumbnail(url=member.guild.icon)
     await channel.send(embed=embed)
-    logger.info(f"{member.name} ist dem Server {member.guild.name} beigetreten.")
+    print(f"{member.name} ist dem Server {member.guild.name} beigetreten.")
 
 
 @client.event
 async def on_message(message: discord.Message):
     if message.author.bot:
         return
-    if client.user.mentioned_in(message):
-        await message.channel.send("Ja genau.")
     else:
         await client.process_commands(message)
 
@@ -86,4 +84,4 @@ async def sync(ctx):
     except discord.HTTPException as e:
         print("Syncing fehlgeschlagen: " + e.text)
 
-client.run(TOKEN, root_logger=True)
+client.run(TOKEN)
