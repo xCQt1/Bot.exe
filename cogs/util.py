@@ -83,15 +83,6 @@ class Utility(commands.Cog):
             print(e)
             await i.response.send_message("Die Nachricht konnte nicht geschickt werden.", ephemeral=True)
 
-    @app_commands.command(name="botinvite", description="Schickt einen Einladungslink für Bot.exe")
-    @app_commands.guilds()
-    async def botinvite(self, i: discord.Interaction):
-        embed = discord.Embed(title="Lade Bot.exe auf deinen Server ein!",
-                              description="Benutze diesen Link, um Bot.exe auf deinen Server einzuladen und dort nutzen zu können!",
-                              color=cogColor)
-        embed.add_field(name=invurl, value="")
-        await i.response.send_message(embed=embed)
-
 
 async def setup(client):
     await client.add_cog(Utility(client))

@@ -10,8 +10,8 @@ class Surveys(commands.Cog):
 
     @app_commands.command(name="create", description="Erstellt eine Umfrage.")
     @app_commands.checks.has_permissions(administrator=True)
-    @app_commands.rename(singleVoide="oneVote")
-    @app_commands.describe(name="Der Name der Umfrage", singleVote="Soll nur eine Stimme pro Person vergeben werden können?")
+    @app_commands.rename(singleVoice="onevote")
+    @app_commands.describe(name="Der Name der Umfrage", singleVoice="Soll nur eine Stimme pro Person vergeben werden können?")
     async def create(self, i: discord.Interaction, name: str, singleVoice: bool = True):
         pass
 
@@ -34,7 +34,7 @@ class ChoseSurveyToEnd(View):
         with open("../data/surveys.json", "r") as file:
             return [SelectOption(label="test1"), SelectOption(label="test2")]
 
-    @discord.ui.select(placeholder="Wähle eine Umfrage aus, die du beenden möchtest.", options=getListOfSurveys())
+    @discord.ui.select(placeholder="Wähle eine Umfrage aus, die du beenden möchtest.")
     async def callback(self, i: discord.Interaction, select: Select):
         pass
 

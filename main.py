@@ -1,4 +1,6 @@
 import os, discord, sys, config
+import time
+
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound, UserNotFound, RoleNotFound, ChannelNotFound, BotMissingPermissions, GuildNotFound
 
@@ -53,6 +55,11 @@ async def on_member_join(member: discord.Member):
 async def on_message(message: discord.Message):
     if message.author.bot:
         return
+    elif "ich bin" in message.content.lower():
+        time.sleep(1)
+        split = message.content.split(" ")
+        name = split[split.index("bin") + 1]
+        await message.channel.send(f"Hallo {name}, ich bin {client.user.name}")
     else:
         await client.process_commands(message)
 
