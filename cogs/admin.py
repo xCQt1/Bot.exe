@@ -11,7 +11,7 @@ STATUS = {
     discord.Status.online: "🟢 ",
     discord.Status.dnd: "⛔ ",
     discord.Status.idle: "🌙 ",
-    discord.Status.offline: "🔻 ",
+    discord.Status.offline: "  ",
     discord.Status.do_not_disturb: "⛔ ",
     discord.Status.invisible: "⚪ "
 }
@@ -28,8 +28,8 @@ class Administration(commands.Cog):
                            reason="Grund, aus dem der User gekickt werden soll (z.B. Spamming, etc.).")
     @app_commands.checks.has_permissions(kick_members=True)
     async def kick(self, i: discord.Interaction, user: discord.Member, reason: str = "Nicht angegeben"):
-        if user.id == self.client.user.id:
-            await i.response.send_message(embed=discord.Embed(description="Du kannst Bot.exe nicht kicken."))
+        if user.id == self.client.user.id or user.id == i.guild.owner_id:
+            await i.response.send_message(embed=discord.Embed(description="Du kannst diesen User nicht kicken."))
             return
         await user.kick(reason=reason)
         embed = discord.Embed(title=f"{user.name} wurde(n) von {i.user.name} gekickt.",
@@ -41,8 +41,8 @@ class Administration(commands.Cog):
                            reason="Der Grund, aus dem der User gebannt werden soll.")
     @app_commands.checks.has_permissions(ban_members=True)
     async def ban(self, i: discord.Interaction, user: discord.Member, reason: str = "Nicht angegeben"):
-        if user.id == self.client.user.id:
-            await i.response.send_message(embed=discord.Embed(description="Du kannst Bot.exe nicht bannen."))
+        if user.id == self.client.user.id or user.id == i.guild.owner_id:
+            await i.response.send_message(embed=discord.Embed(description="Du kannst diesen User nicht bannen."))
             return
         await user.ban(reason=reason)
         embed = discord.Embed(title=f"{user.name} wurde von {i.user.name} gebannt.",
@@ -79,7 +79,7 @@ class Administration(commands.Cog):
         embed.set_footer(text=f"ID: {i.guild.id}")
         await i.response.send_message(embed=embed)
 
-    @app_commands.command(name="invite", description="Erstellt eine Einladung zu diesem Server und schickt sie dem angegebenen User per DM.")
+    @app_commands.command(name="invite", description="Erstellt eine Einladung zu diesem Server.")
     async def invite(self, i: discord.Interaction):
         link = await i.channel.create_invite(max_age=300)
         embed = discord.Embed(title="Einladungslink",
@@ -244,8 +244,6 @@ class Administration(commands.Cog):
             await i.followup.send(embed=discord.Embed(description=f"Die Rolle {select.values[0].name} wurde erfolgreich gelöscht!"))
 
     class AssignRoleUserSelect(View):
-        role: discord.Role
-
         def __init__(self, role: discord.Role):
             super().__init__()
             self.role = role

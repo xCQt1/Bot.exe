@@ -1,5 +1,3 @@
-import logging
-from logging import handlers
 import os, discord, sys, config
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound, UserNotFound, RoleNotFound, ChannelNotFound, BotMissingPermissions, GuildNotFound
@@ -16,8 +14,8 @@ async def loadCogs():
     for file in os.listdir("cogs"):
         if file.endswith(".py"):
             await client.load_extension(f"cogs.{file[:-3]}")
-            print(f"{file} geladen")
-    print("Alle Module geladen!")
+            print(f"-> {file} geladen")
+    print("Alle Module geladen!\n\r")
 
 
 @client.event
