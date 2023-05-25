@@ -87,6 +87,7 @@ async def sync(ctx):
         await client.tree.sync()
         print("Synced.")
     except discord.HTTPException as e:
-        print("Syncing fehlgeschlagen: " + e.text)
+        print("Syncing fehlgeschlagen:")
+        print(e)
 
 client.run(TOKEN)
