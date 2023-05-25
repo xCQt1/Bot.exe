@@ -4,6 +4,8 @@ from discord.ui import View, Button, Select
 from discord.ext import commands
 
 
+cogColor = discord.Color.red()
+
 class Surveys(commands.GroupCog):
     def __init__(self, client):
         self.client = client
@@ -57,11 +59,13 @@ class VoteView(View):
 
     def getProgressbar(self, option):
         if self.totalvotes == 0:
-            return f" 0%"
-        progress = int(self.options[option] / self.totalvotes * 20)
-        percentage = int((self.options[option] / self.totalvotes) * 100)
-        bar = self.progBarElements[0] * progress + self.progBarElements[1] * (20 - progress)
-        return f'[{bar}] {percentage}%'
+            bar = self.progBarElements[1] * 20
+            percentage = 0
+        else:
+            progress = int(self.options[option] / self.totalvotes * 20)
+            percentage = int((self.options[option] / self.totalvotes) * 100)
+            bar = self.progBarElements[0] * progress + self.progBarElements[1] * (20 - progress)
+        return f'[{bar}] {percentage}% ({self.options[option]} Stimmen)'
 
     async def handler(self, i: discord.Interaction):
         self.select.disabled = True
@@ -69,11 +73,9 @@ class VoteView(View):
         self.options[self.select.values[0]] += 1
         await i.response.edit_message(embed=self.getEmbed())
 
-    async def updateMessage(self, i: discord.Interaction):
-        await i.response.edit_message(embed=self.getEmbed(), view=self)
-
     def getEmbed(self):
-        embed = discord.Embed(title=self.name)
+        embed = discord.Embed(title=self.name, colour=cogColor)
+        embed.set_footer(text=f"Gesamte Anzahl von Stimmen: {self.totalvotes}")
         for i, option in enumerate(self.options):
             embed.add_field(name=f"{self.numbers[i]} {option}", value=self.getProgressbar(option), inline=False)
         return embed
