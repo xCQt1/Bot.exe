@@ -35,7 +35,7 @@ async def setup(client):
 class VoteView(View):
 
     numbers = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"]
-    progBarElements = [":black_large_square:", ":white_large_square:"]
+    progBarElements = [":white_large_square:", ":black_large_square:"]
     totalvotes = 0
 
     def __init__(self, name, options, i: discord.Interaction):
@@ -58,14 +58,15 @@ class VoteView(View):
     def getProgressbar(self, option):
         if self.totalvotes == 0:
             return f" 0%"
-        progress = int(self.options[option] / self.totalvotes * 10)
+        progress = int(self.options[option] / self.totalvotes * 20)
         percentage = int((self.options[option] / self.totalvotes) * 100)
-        bar = '=' * progress + '-' * (10 - progress)
+        bar = self.progBarElements[0] * progress + self.progBarElements[1] * (20 - progress)
         return f'[{bar}] {percentage}%'
 
     async def handler(self, i: discord.Interaction):
         self.select.disabled = True
         self.totalvotes += 1
+        self.options[self.select.values[0]] += 1
         await i.response.edit_message(embed=self.getEmbed())
 
     async def updateMessage(self, i: discord.Interaction):
