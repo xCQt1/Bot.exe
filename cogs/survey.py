@@ -71,7 +71,7 @@ class VoteView(View):
         self.select.disabled = True
         self.totalvotes += 1
         self.options[self.select.values[0]] += 1
-        await i.response.edit_message(embed=self.getEmbed())
+        await i.response.edit_message(embed=self.getEmbed(), view=self)
 
     def getEmbed(self):
         embed = discord.Embed(title=self.name, colour=cogColor)
