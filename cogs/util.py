@@ -75,7 +75,7 @@ class Utility(commands.Cog):
                               description=f"**{i.user.name}** hat dir am **{time.strftime('%m.%d.%Y um %H:%M')}** aus **{i.guild.name}** eine Nachricht geschickt:",
                               color=cogColor)
         embed.add_field(name=f"**{inhalt}**", value="", inline=True)
-        embed.set_footer(text="Diese Nachricht wurde mit /dm durch Bot.exe geschickt! Schreibe /botinvite für einen Einladungslink für deinen Server!")
+        embed.set_footer(icon_url=self.client.user.avatar, text="Diese Nachricht wurde mit /dm durch Bot.exe geschickt!")
         try:
             await user.send(embed=embed)
             await i.response.send_message("Deine Nachricht wurde geschickt.", ephemeral=True)
