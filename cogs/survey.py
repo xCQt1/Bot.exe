@@ -6,6 +6,7 @@ from discord.ext import commands
 
 cogColor = discord.Color.red()
 
+
 class Surveys(commands.GroupCog):
     def __init__(self, client):
         self.client = client
@@ -13,16 +14,19 @@ class Surveys(commands.GroupCog):
     @app_commands.command(name="create", description="Erstellt eine Umfrage.")
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(name="Der Name der Umfrage")
-    async def create(self, i: discord.Interaction, name: str, option1: str, option2: str, option3: str = None, option4: str = None):
+    async def create(self, i: discord.Interaction, name: str, option1: str, option2: str, option3: str = None, option4: str = None, votes_pp: int = 1):
         if option1 is None or option2 is None:
             await i.response.send_message(embed=discord.Embed(description="Es müssen Option 1 und 2 angegeben werden."), ephemeral=True)
         options = [option1, option2]
         if option3 is not None: options.append(option3)
         if option4 is not None: options.append(option4)
-        view = VoteView(name, options, i)
+        if votes_pp < 1:
+            await i.response.send_message(embed=discord.Embed(description="Es muss mindestens eine Stimme pro Person abgegeben werden können."))
+        elif votes_pp > len(options):
+            await i.response.send_message(embed=discord.Embed(description="Es können nicht mehr Stimmen als die Anzahl der Optionen abgegeben werden."))
+        view = VoteView(name, options, votes_pp, i)
         embed = view.getEmbed()
         await i.response.send_message(embed=embed, view=view)
-
 
     @app_commands.command(name="end", description="Beendet eine Umfrage, sodass nicht mehr abgestimmt werden kann.")
     @app_commands.checks.has_permissions(administrator=True)
@@ -39,15 +43,16 @@ class VoteView(View):
     numbers = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"]
     progBarElements = [":white_large_square:", ":black_large_square:"]
     totalvotes = 0
+    usersVoted = 0
 
-    def __init__(self, name, options, i: discord.Interaction):
+    def __init__(self, name, options, maxVotes: int, i: discord.Interaction):
         super().__init__()
         self.name = name
         self.options = {}
         for option in options:
             self.options[option] = 0
         self.convOps = self.convertOptions()
-        self.select = Select(options=self.convOps, placeholder="Wähle eine Option!")
+        self.select = Select(options=self.convOps, placeholder="Wähle eine Option!", max_values=maxVotes)
         self.select.callback = self.handler
         self.add_item(self.select)
 
@@ -69,13 +74,15 @@ class VoteView(View):
 
     async def handler(self, i: discord.Interaction):
         self.select.disabled = True
-        self.totalvotes += 1
-        self.options[self.select.values[0]] += 1
+        self.usersVoted += 1
+        self.totalvotes += len(self.select.values)
+        for n in range(len(self.select.values)):
+            self.options[self.select.values[n]] += 1
         await i.response.edit_message(embed=self.getEmbed(), view=self)
 
     def getEmbed(self):
         embed = discord.Embed(title=self.name, colour=cogColor)
-        embed.set_footer(text=f"Gesamte Anzahl von Stimmen: {self.totalvotes}")
+        embed.set_footer(text=f"Gesamte Anzahl von Stimmen: {self.totalvotes}\n\rAbgestimmte Personen: {self.usersVoted}")
         for i, option in enumerate(self.options):
             embed.add_field(name=f"{self.numbers[i]} {option}", value=self.getProgressbar(option), inline=False)
         return embed
