@@ -1,11 +1,12 @@
 import time
 
 import discord, os, sys, wikipedia, urllib.request, json, requests
-from discord.ext import commands
 from discord import app_commands
+from discord.ext import commands
+from discord.ui import Button, View
+from typing import Literal
 
 cogColor = discord.Colour.dark_blue()
-invurl = "https://canary.discord.com/api/oauth2/authorize?client_id=976538058826612746&permissions=8&scope=bot"
 
 
 class Utility(commands.Cog):
@@ -22,11 +23,31 @@ class Utility(commands.Cog):
             await i.response.send_message(f"Es konnten keine Suchergebniss zu {begriff} gefunden werden.")
             return
         page = wikipedia.page(pages[0], auto_suggest=False)
-        result = page.summary[0:1023]
-        embed = discord.Embed(title="Wikipedia Suchergebnis", colour=cogColor, type="article")
-        embed.set_image(url=page.images[1])
-        embed.add_field(name=page.title, value=result).set_thumbnail(url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1024px-Wikipedia-logo-v2.svg.png")
-        await i.followup.send(embed=embed)
+        embeds = []
+        title = discord.Embed(title="Wikipedia Suchergebnis", type="article")
+        title.set_image(url=page.images[0])
+        title.add_field(name=page.title, value=page.url)
+        embeds.append(title)
+        chunks = list(await self.chunkString(page.summary))
+        for site in chunks:
+            embed = discord.Embed(title=f"{page.title} - Wikipedia Zusammenfassung")
+            embed.set_thumbnail(url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1024px-Wikipedia-logo-v2.svg.png")
+            embed.add_field(name=" ", value=site)
+            embeds.append(embed)
+        view = PageView(embeds)
+        await i.followup.send(embed=await view.getEmbed(), view=view)
+
+    async def chunkString(self, string: str):
+        chunks = []
+        temp = ""
+        for word in string.split(" "):
+            if len(temp) + len(word) + 1 < 1024:
+                temp += f" {word}"
+            else:
+                chunks.append(temp)
+                temp = ""
+        chunks.append(temp)
+        return chunks
 
     @app_commands.command(name="locateip", description="Sammelt Informationen über die angegebene IPv4-Adresse.")
     @app_commands.describe(ip="Die IP-Adresse, über die Informationen abgerufen werden sollen.")
@@ -86,3 +107,53 @@ class Utility(commands.Cog):
 
 async def setup(client):
     await client.add_cog(Utility(client))
+
+
+class PageView(View):
+    def __init__(self, pages: list[discord.Embed]):
+        super().__init__()
+        self.pages = pages
+        self.site = 0
+        self.beginButton = Button(label="⏮️", style=discord.ButtonStyle.green)
+        self.beginButton.callback = self.goToBegin
+        self.beginButton.disabled = True
+        self.prevButton = Button(label="⏪", style=discord.ButtonStyle.blurple)
+        self.prevButton.callback = self.goPrev
+        self.prevButton.disabled = True
+        self.nextButton = Button(label="⏩", style=discord.ButtonStyle.blurple)
+        self.nextButton.callback = self.goNext
+        self.endButton = Button(label="⏭️", style=discord.ButtonStyle.green)
+        self.endButton.callback = self.goToEnd
+        self.add_item(self.beginButton)
+        self.add_item(self.prevButton)
+        self.add_item(self.nextButton)
+        self.add_item(self.endButton)
+
+    async def getEmbed(self):
+        return self.pages[self.site].set_footer(text=f"Seite: {self.site + 1}/{len(self.pages)}")
+
+    async def goToBegin(self, i: discord.Interaction):
+        self.site = 0
+        await self.updateView(i)
+
+    async def goPrev(self, i: discord.Interaction):
+        if self.site != 0:
+            self.site -= 1
+        await self.updateView(i)
+
+    async def goNext(self, i: discord.Interaction):
+        if self.site != len(self.pages) - 1:
+            self.site += 1
+        await self.updateView(i)
+
+    async def goToEnd(self, i: discord.Interaction):
+        self.site = len(self.pages) - 1
+        await self.updateView(i)
+
+    async def updateView(self, i: discord.Interaction):
+        self.beginButton.disabled = True if self.site == 0 else False
+        self.prevButton.disabled = True if self.site == 0 else False
+        self.nextButton.disabled = True if self.site == len(self.pages) - 1 else False
+        self.endButton.disabled = True if self.site == len(self.pages) - 1 else False
+        embed = await self.getEmbed()
+        await i.response.edit_message(embed=embed, view=self)

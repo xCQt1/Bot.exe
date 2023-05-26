@@ -45,7 +45,7 @@ class VoteView(View):
     totalvotes = 0
     usersVoted = 0
 
-    def __init__(self, name, options, maxVotes: int, i: discord.Interaction):
+    def __init__(self, name: str, options: list[str], maxVotes: int, i: discord.Interaction):
         super().__init__()
         self.name = name
         self.options = {}
@@ -62,7 +62,7 @@ class VoteView(View):
             selOptions.append(SelectOption(label=option, emoji=self.numbers[i]))
         return selOptions
 
-    def getProgressbar(self, option):
+    def getProgressbar(self, option: str):
         if self.totalvotes == 0:
             bar = self.progBarElements[1] * 20
             percentage = 0

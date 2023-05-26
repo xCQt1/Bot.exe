@@ -7,6 +7,8 @@ from logging.config import dictConfig
 load_dotenv()
 DISCORD_TOKEN = os.getenv("TOKEN")
 
+TEST_GUILD_ID = "1067126862167421040"
+
 LOGGING_CONFIG = {
     "version": 1,
     "disable_existing_loggers": False,
