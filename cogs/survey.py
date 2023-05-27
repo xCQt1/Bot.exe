@@ -43,7 +43,9 @@ class VoteView(View):
     numbers = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"]
     progBarElements = [":white_large_square:", ":black_large_square:"]
     totalvotes = 0
-    usersVoted = 0
+    usersVoted = []
+
+    # Fixen: Select wird für alle deaktiviert, Lösung: array mit abgestimmtn Usern
 
     def __init__(self, name: str, options: list[str], maxVotes: int, i: discord.Interaction):
         super().__init__()
@@ -73,16 +75,18 @@ class VoteView(View):
         return f'[{bar}] {percentage}% ({self.options[option]} Stimmen)'
 
     async def handler(self, i: discord.Interaction):
-        self.select.disabled = True
-        self.usersVoted += 1
-        self.totalvotes += len(self.select.values)
-        for n in range(len(self.select.values)):
-            self.options[self.select.values[n]] += 1
-        await i.response.edit_message(embed=self.getEmbed(), view=self)
+        if i.user.id not in self.usersVoted:
+            self.usersVoted.append(i.user.id)
+            self.totalvotes += len(self.select.values)
+            for n in range(len(self.select.values)):
+                self.options[self.select.values[n]] += 1
+            await i.response.edit_message(embed=self.getEmbed(), view=self)
+        else:
+            await i.response.send_message(embed=discord.Embed(description="Du hast in dieser Abstimmung bereits abgestimmt."), ephemeral=True)
 
     def getEmbed(self):
         embed = discord.Embed(title=self.name, colour=cogColor)
-        embed.set_footer(text=f"Gesamte Anzahl von Stimmen: {self.totalvotes}\n\rAbgestimmte Personen: {self.usersVoted}")
+        embed.set_footer(text=f"Gesamte Anzahl von Stimmen: {self.totalvotes}\n\rAbgestimmte Personen: {len(self.usersVoted)}")
         for i, option in enumerate(self.options):
             embed.add_field(name=f"{self.numbers[i]} {option}", value=self.getProgressbar(option), inline=False)
         return embed

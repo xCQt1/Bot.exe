@@ -1,11 +1,7 @@
-import time
-
-import discord, os, sys, wikipedia, urllib.request, json, requests
-from discord import app_commands
+import discord, os, sys, wikipedia, urllib.request, json, requests, time
+from discord import app_commands, ButtonStyle
 from discord.ext import commands
 from discord.ui import Button, View
-from typing import Literal
-
 cogColor = discord.Colour.dark_blue()
 
 
@@ -93,7 +89,7 @@ class Utility(commands.Cog):
     @app_commands.describe(user="Nutzer", inhalt="Inhalt der Nachricht")
     async def dm(self, i: discord.Interaction, user: discord.Member, inhalt: str):
         embed = discord.Embed(title="✉️ Du hast eine Nachricht erhalten!",
-                              description=f"**{i.user.name}** hat dir am **{time.strftime('%m.%d.%Y um %H:%M')}** aus **{i.guild.name}** eine Nachricht geschickt:",
+                              description=f"**{i.user.name}** hat dir am **{time.strftime('%D.%M.%Y um %H:%M')}** aus **{i.guild.name}** eine Nachricht geschickt:",
                               color=cogColor)
         embed.add_field(name=f"**{inhalt}**", value="", inline=True)
         embed.set_footer(icon_url=self.client.user.avatar, text="Diese Nachricht wurde mit /dm durch Bot.exe geschickt!")
@@ -103,6 +99,11 @@ class Utility(commands.Cog):
         except Exception as e:
             print(e)
             await i.response.send_message("Die Nachricht konnte nicht geschickt werden.", ephemeral=True)
+
+    @app_commands.command(name="calculator", description="Erstellt einen interaktiven Taschenrechner")
+    async def calculator(self, i: discord.Interaction):
+        view = CalculatorView()
+        await i.response.send_message(view=view)
 
 
 async def setup(client):
@@ -157,3 +158,68 @@ class PageView(View):
         self.endButton.disabled = True if self.site == len(self.pages) - 1 else False
         embed = await self.getEmbed()
         await i.response.edit_message(embed=embed, view=self)
+
+
+class CalculatorView(View):
+
+    calclusion = "0"
+    
+    def __init__(self):
+        super().__init__()
+        button = Button(label="C", style=ButtonStyle.blurple, row=0)
+        self.add_item(button)
+        button = Button(label="(", style=ButtonStyle.grey, row=0)
+        self.add_item(button)
+        button = Button(label=")", style=ButtonStyle.grey, row=0)
+        self.add_item(button)
+        button = Button(label="+", style=ButtonStyle.green, row=0)
+        self.add_item(button)
+        button = Button(label="1", style=ButtonStyle.grey, row=1)
+        self.add_item(button)
+        button = Button(label="2", style=ButtonStyle.grey, row=1)
+        self.add_item(button)
+        button = Button(label="3", style=ButtonStyle.grey, row=1)
+        self.add_item(button)
+        button = Button(label="-", style=ButtonStyle.green, row=1)
+        self.add_item(button)
+        button = Button(label="4", style=ButtonStyle.grey, row=2)
+        self.add_item(button)
+        button = Button(label="5", style=ButtonStyle.grey, row=2)
+        self.add_item(button)
+        button = Button(label="6", style=ButtonStyle.grey, row=2)
+        self.add_item(button)
+        button = Button(label="*", style=ButtonStyle.green, row=2)
+        self.add_item(button)
+        button = Button(label="7", style=ButtonStyle.grey, row=3)
+        self.add_item(button)
+        button = Button(label="8", style=ButtonStyle.grey, row=3)
+        self.add_item(button)
+        button = Button(label="9", style=ButtonStyle.grey, row=3)
+        self.add_item(button)
+        button = Button(label="/", style=ButtonStyle.green, row=3)
+        self.add_item(button)
+        button = Button(label="00", style=ButtonStyle.grey, row=4)
+        self.add_item(button)
+        button = Button(label="0", style=ButtonStyle.grey, row=4)
+        self.add_item(button)
+        button = Button(label=",", style=ButtonStyle.grey, row=4)
+        self.add_item(button)
+        button = Button(label="=", style=ButtonStyle.blurple, row=4)
+        button.callback = self.calculate
+        self.add_item(button)
+
+    async def calculate(self, i: discord.Interaction):
+        embed = discord.Embed(title="Taschenrechner")
+        embed.add_field(name=eval(self.calclusion), value="")
+        await i.response.edit_message(embed=embed, view=self)
+
+    async def handler(self, i: discord.Interaction, button: Button):
+        pass
+
+    async def getEmbed(self):
+        embed = discord.Embed(title="Taschenrechner")
+        embed.add_field(name=self.calclusion, value=eval(self.calclusion))
+        return embed
+
+    async def updateMessage(self, i: discord.Interaction):
+        await i.response.edit_message(embed=await self.getEmbed(), view=self)

@@ -56,19 +56,6 @@ class Fun(commands.Cog):
     async def idk(self, i: discord.Interaction):
         await i.response.send_message(random.choice(IDKS))
 
-    @app_commands.command(name="comeonbro", description="Stoppt die Zeit, die ein User braucht, um online zu kommen.")
-    @app_commands.describe(user="User, der online kommen soll")
-    async def comeonbro(self, i: discord.Interaction, user: discord.Member):
-        await i.response.defer()
-        await i.followup.send(f"{user.mention}, deine Zeit läuft!")
-        startTime = time.time()
-        while user.status == discord.Status.offline:
-            pass
-        timeNeeded = time.time() - startTime
-        embed = discord.Embed(title=f"{user.name} ist online gekommen!", color=cogColor)
-        embed.add_field(name="Benötigte Zeit:", value=f"**{timeNeeded} Sekunden**")
-        await i.followup.send(i.user.mention, embed=embed)
-
     @app_commands.command(name="meme", description="Schickt ein Meme von Reddit")
     async def meme(self, i: discord.Interaction):
         response = requests.get(url=memeUrl)

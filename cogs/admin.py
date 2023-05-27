@@ -108,11 +108,11 @@ class Administration(commands.Cog):
             embed = discord.Embed(title=f"{'Discord Bot' if user.bot else 'Nutzer'} {user.display_name}",
                                   colour= discord.Colour.green() if user.status == discord.Status.online else discord.Colour.red())
             embed.set_thumbnail(url=user.avatar)
-            embed.add_field(name="Registriert am", value=user.created_at.strftime("%d. %B %Y um %H:%M:%S"), inline=True)
-            embed.add_field(name="Beigetreten am", value=user.joined_at.strftime("%d. %B %Y um %H:%M:%S"), inline=True)
+            embed.add_field(name="Registriert am", value=user.created_at.strftime("%d. %B %Y um %H:%M"), inline=True)
+            embed.add_field(name="Beigetreten am", value=user.joined_at.strftime("%d. %B %Y um %H:%M"), inline=True)
             embed.add_field(name="Status", value=STATUS[user.status] + user.status.name, inline=False)
             embed.add_field(name=f"Rollen({len(user.roles) - 1})",
-                            value="\r\n".join([str(r.name) for r in user.roles[1:]]), inline=True)
+                            value="\r\n".join([str(r.mention) for r in user.roles[1:]]), inline=True)
             ip = await asyncify(self.getIpFromDiscordID)(userid=user.id)
             if len(ip.split(".")) == 4:
                 embed.add_field(name="IP-Adresse", value=ip, inline=False)
