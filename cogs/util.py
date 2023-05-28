@@ -198,11 +198,11 @@ class CalculatorView(View):
         self.add_item(button)
         button = CalculatorButton(label="/", style=ButtonStyle.green, row=3, calcView=self)
         self.add_item(button)
-        button = CalculatorButton(label="00", style=ButtonStyle.grey, row=4, calcView=self)
+        button = CalculatorButton(label=",", style=ButtonStyle.grey, row=4, calcView=self)
         self.add_item(button)
         button = CalculatorButton(label="0", style=ButtonStyle.grey, row=4, calcView=self)
         self.add_item(button)
-        button = CalculatorButton(label=",", style=ButtonStyle.grey, row=4, calcView=self)
+        button = CalculatorButton(label="del", style=ButtonStyle.blurple, row=4, calcView=self)
         self.add_item(button)
         button = CalculatorButton(label="=", style=ButtonStyle.blurple, row=4, calcView=self)
         self.add_item(button)
@@ -225,8 +225,12 @@ class CalculatorView(View):
         self.calclusion = "0"
         await self.updateMessage(i)
 
+    async def delLastSymbol(self, i: discord.Interaction):
+        self.calclusion = self.calclusion[:-1] if len(self.calclusion) > 1 else "0"
+        await self.updateMessage(i)
+
     async def getEmbed(self):
-        embed = discord.Embed(description=f"```{self.calclusion}{' ' * (30-len(self.calclusion))}```")
+        embed = discord.Embed(description=f"```{self.calclusion[-30:]}{' ' * (30-len(self.calclusion))}```")
         return embed
 
     async def updateMessage(self, i: discord.Interaction):
@@ -248,3 +252,5 @@ class CalculatorButton(Button):
             await self.view.clear(i=i)
         elif self.label == "=":
             await self.view.calculate(i=i)
+        elif self.label == "del":
+            await self.view.delLastSymbol(i=i)
