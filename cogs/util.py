@@ -103,7 +103,7 @@ class Utility(commands.Cog):
     @app_commands.command(name="calculator", description="Erstellt einen interaktiven Taschenrechner")
     async def calculator(self, i: discord.Interaction):
         view = CalculatorView()
-        await i.response.send_message(view=view)
+        await i.response.send_message(view=view, embed=await view.getEmbed())
 
 
 async def setup(client):
@@ -166,60 +166,85 @@ class CalculatorView(View):
     
     def __init__(self):
         super().__init__()
-        button = Button(label="C", style=ButtonStyle.blurple, row=0)
+        button = CalculatorButton(label="C", style=ButtonStyle.blurple, row=0, calcView=self)
         self.add_item(button)
-        button = Button(label="(", style=ButtonStyle.grey, row=0)
+        button = CalculatorButton(label="(", style=ButtonStyle.grey, row=0, calcView=self)
         self.add_item(button)
-        button = Button(label=")", style=ButtonStyle.grey, row=0)
+        button = CalculatorButton(label=")", style=ButtonStyle.grey, row=0, calcView=self)
         self.add_item(button)
-        button = Button(label="+", style=ButtonStyle.green, row=0)
+        button = CalculatorButton(label="+", style=ButtonStyle.green, row=0, calcView=self)
         self.add_item(button)
-        button = Button(label="1", style=ButtonStyle.grey, row=1)
+        button = CalculatorButton(label="1", style=ButtonStyle.grey, row=1, calcView=self)
         self.add_item(button)
-        button = Button(label="2", style=ButtonStyle.grey, row=1)
+        button = CalculatorButton(label="2", style=ButtonStyle.grey, row=1, calcView=self)
         self.add_item(button)
-        button = Button(label="3", style=ButtonStyle.grey, row=1)
+        button = CalculatorButton(label="3", style=ButtonStyle.grey, row=1, calcView=self)
         self.add_item(button)
-        button = Button(label="-", style=ButtonStyle.green, row=1)
+        button = CalculatorButton(label="-", style=ButtonStyle.green, row=1, calcView=self)
         self.add_item(button)
-        button = Button(label="4", style=ButtonStyle.grey, row=2)
+        button = CalculatorButton(label="4", style=ButtonStyle.grey, row=2, calcView=self)
         self.add_item(button)
-        button = Button(label="5", style=ButtonStyle.grey, row=2)
+        button = CalculatorButton(label="5", style=ButtonStyle.grey, row=2, calcView=self)
         self.add_item(button)
-        button = Button(label="6", style=ButtonStyle.grey, row=2)
+        button = CalculatorButton(label="6", style=ButtonStyle.grey, row=2, calcView=self)
         self.add_item(button)
-        button = Button(label="*", style=ButtonStyle.green, row=2)
+        button = CalculatorButton(label="*", style=ButtonStyle.green, row=2, calcView=self)
         self.add_item(button)
-        button = Button(label="7", style=ButtonStyle.grey, row=3)
+        button = CalculatorButton(label="7", style=ButtonStyle.grey, row=3, calcView=self)
         self.add_item(button)
-        button = Button(label="8", style=ButtonStyle.grey, row=3)
+        button = CalculatorButton(label="8", style=ButtonStyle.grey, row=3, calcView=self)
         self.add_item(button)
-        button = Button(label="9", style=ButtonStyle.grey, row=3)
+        button = CalculatorButton(label="9", style=ButtonStyle.grey, row=3, calcView=self)
         self.add_item(button)
-        button = Button(label="/", style=ButtonStyle.green, row=3)
+        button = CalculatorButton(label="/", style=ButtonStyle.green, row=3, calcView=self)
         self.add_item(button)
-        button = Button(label="00", style=ButtonStyle.grey, row=4)
+        button = CalculatorButton(label="00", style=ButtonStyle.grey, row=4, calcView=self)
         self.add_item(button)
-        button = Button(label="0", style=ButtonStyle.grey, row=4)
+        button = CalculatorButton(label="0", style=ButtonStyle.grey, row=4, calcView=self)
         self.add_item(button)
-        button = Button(label=",", style=ButtonStyle.grey, row=4)
+        button = CalculatorButton(label=",", style=ButtonStyle.grey, row=4, calcView=self)
         self.add_item(button)
-        button = Button(label="=", style=ButtonStyle.blurple, row=4)
-        button.callback = self.calculate
+        button = CalculatorButton(label="=", style=ButtonStyle.blurple, row=4, calcView=self)
         self.add_item(button)
 
     async def calculate(self, i: discord.Interaction):
-        embed = discord.Embed(title="Taschenrechner")
-        embed.add_field(name=eval(self.calclusion), value="")
-        await i.response.edit_message(embed=embed, view=self)
+        try:
+            self.calclusion = str(eval(self.calclusion))
+        except Exception as e:
+            self.calclusion = "Fehler"
+        await self.updateMessage(i)
 
-    async def handler(self, i: discord.Interaction, button: Button):
-        pass
+    async def addSymbol(self, symbol, i: discord.Interaction):
+        if self.calclusion == "0" or self.calclusion == "Fehler":
+            self.calclusion = str(symbol)
+        else:
+            self.calclusion += str(symbol)
+        await self.updateMessage(i)
+
+    async def clear(self, i: discord.Interaction):
+        self.calclusion = "0"
+        await self.updateMessage(i)
 
     async def getEmbed(self):
-        embed = discord.Embed(title="Taschenrechner")
-        embed.add_field(name=self.calclusion, value=eval(self.calclusion))
+        embed = discord.Embed(description=f"```{self.calclusion}{' ' * (30-len(self.calclusion))}```")
         return embed
 
     async def updateMessage(self, i: discord.Interaction):
         await i.response.edit_message(embed=await self.getEmbed(), view=self)
+
+
+class CalculatorButton(Button):
+    def __init__(self, label: str, row: int, style: ButtonStyle, calcView: CalculatorView):
+        super().__init__(label=label, row=row, style=style)
+        self.calcView = calcView
+        self.label = label
+        self.row = row
+        self.style = style
+
+    async def callback(self, i: discord.Interaction):
+        if self.style is not ButtonStyle.blurple:
+            await self.view.addSymbol(self.label, i=i)
+        elif self.label == "C":
+            await self.view.clear(i=i)
+        elif self.label == "=":
+            await self.view.calculate(i=i)
