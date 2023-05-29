@@ -59,13 +59,9 @@ class Fun(commands.Cog):
 
     @app_commands.command(name="meme", description="Schickt ein Meme von Reddit")
     async def meme(self, i: discord.Interaction):
-        response = requests.get(url=memeUrl)
-        jsonData = response.json()
-        try:
-            embed = discord.Embed(title=jsonData["title"]).set_image(url=jsonData["preview"][3]).set_author(name=f"{jsonData['author']} - r/{jsonData['subreddit']}")
-        except IndexError:
-            embed = discord.Embed(description="Das hat leider nicht geklappt!")
-        await i.response.send_message(embed=embed)
+        await i.response.defer(ephemeral=True)
+        view = PostView(memeUrl)
+        await i.followup.send(embed=await view.getEmbed(), view=view)
 
     image = app_commands.Group(name="image", description="Commands, die Bilder aus Subreddits schicken können.")
 
@@ -106,29 +102,42 @@ class PostView(View):
 
     async def setNewEmbed(self):
         try:
-            api = urllib.request.urlopen(self.url)
-            data = json.load(api)
-            while True:
-                pic = data["data"]["children"][random.randint(0,25)]["data"]
-                purl = pic["url"]
-                if purl.endswith(".jpg") or purl.endswith(".png"):
-                    embed = discord.Embed(title=f"{pic['subreddit_name_prefixed']} - Post von {pic['author']}", colour=cogColor, type="image")
-                    embed.set_image(url=purl)
-                    embed.set_footer(text="Powered by Reddit")
-                    self.embed = embed
-                    self.success = True
-                    return
+            if "reddit.com" in self.url:
+                api = urllib.request.urlopen(self.url)
+                data = json.load(api)
+                while True:
+                    pic = data["data"]["children"][random.randint(0,25)]["data"]
+                    purl = pic["url"]
+                    if purl.endswith(".jpg") or purl.endswith(".png"):
+                        self.embed = await self.buildEmbed(pic["subreddit_name_prefixed"], pic["author"], pic["url"])
+                        break
+            elif "meme-api" in self.url:
+                data = requests.get(self.url).json()
+                self.embed = await self.buildEmbed(f"r/{data['subreddit']}", data["author"], data["url"])
+            self.success = True
         except urllib.error.HTTPError as e:
+            print(e)
             self.success = False
             if e.status == 429:
                 self.button.disabled = True
-                self.embed = discord.Embed(description="Es wurden zu viele Nachrichten geschickt. Versuche es bitte in ein paar Minuten nochmal.")
+                self.embed = discord.Embed(description="Es wurden zu viele Nachrichten geschickt. Versuche es bitte in ein paar Minuten nochmal.", colour=cogColor)
             else:
-                self.embed = discord.Embed(description="Versuche es bitte gleich nochmal.")
+                self.embed = discord.Embed(description="Versuche es bitte gleich nochmal.", colour=cogColor)
+        except Exception as e:
+            print(e)
+            self.success = False
+            self.embed = discord.Embed(description="Versuche es bitte gleich nochmal.", colour=cogColor)
+
+    async def buildEmbed(self, subreddit: str, author: str, pictureUrl: str):
+        embed = discord.Embed(title=f"{subreddit} - Post von {author}", colour=cogColor)
+        embed.set_image(url=pictureUrl)
+        embed.set_footer(text="Powered by Reddit")
+        return embed
 
     async def getEmbed(self):
         await self.setNewEmbed()
         self.saveButton.disabled = False if self.success else True
+        self.revealButton.disabled = False if self.success else True
         return self.embed
 
     async def sendPostToDM(self, i: discord.Interaction):
