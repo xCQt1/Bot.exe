@@ -1,7 +1,8 @@
 import discord, json, urllib.request, urllib.error, random, time, asyncio
 import requests
 from discord.ext import commands
-from discord import app_commands
+from discord import app_commands, ButtonStyle
+from discord.ui import View, Button
 
 UWUS = ["uwuäöähöhöähäöäöh", "uwu"]
 DNLINKS = {
@@ -71,40 +72,53 @@ class Fun(commands.Cog):
     @image.command(name="catgirl", description="Für Eric, damit er sich freut")
     async def catgirl(self, i: discord.Interaction):
         await i.response.defer(ephemeral=True)
-        while True:
-            try:
-                api = urllib.request.urlopen("https://www.reddit.com/r/CatgirlSFW.json")
-                data = json.load(api)
-                while True:
-                    purl = data["data"]["children"][random.randint(0, 25)]["data"]["url"]
-                    if purl.endswith(".jpg") or purl.endswith(".png"):
-                        embed = discord.Embed(title="Catgirl", colour=cogColor, type="article")
-                        embed.set_image(url=purl)
-                        embed.set_footer(text="Powered by: r/CatgirlSFW")
-                        await i.followup.send(embed=embed)
-                        return
-            except urllib.error.HTTPError as e:
-                await i.followup.send("Versuche es bitte etwas später nochmal.")
-                return
+        view = RedditView("https://www.reddit.com/r/CatgirlSFW.json")
+        await i.followup.send(embed=await view.getEmbed(), view=view)
 
     @image.command(name="awwnime", description="Auch für Eric, damit er sich noch mehr freut")
     async def awwnime(self, i: discord.Interaction):
         await i.response.defer(ephemeral=True)
-        try:
-            api = urllib.request.urlopen("https://www.reddit.com/r/awwnime.json")
-            data = json.load(api)
-            while True:
-                pic = data["data"]["children"][random.randint(0, 25)]
-                purl = pic["data"]["url"]
-                if purl.endswith(".jpg") or purl.endswith(".png"):
-                    embed = discord.Embed(title="Anime", colour=cogColor, type="image")
-                    embed.set_image(url=purl)
-                    embed.set_footer(text="Powered by: r/awwnime")
-                    await i.followup.send(embed=embed)
-                    return
-        except urllib.error.HTTPError as e:
-            await i.followup.send("Versuche es bitte etwas später nochmal")
+        view = RedditView("https://www.reddit.com/r/awwnime.json")
+        await i.followup.send(embed=await view.getEmbed(), view=view)
 
 
 async def setup(client):
     await client.add_cog(Fun(client))
+
+
+class RedditView(View):
+
+    embed: discord.Embed
+
+    def __init__(self, url: str):
+        super().__init__()
+        self.url = url
+        self.button = Button(emoji="🔁", label="Neuen Post laden", style=ButtonStyle.blurple)
+        self.button.callback = self.callback
+        self.add_item(self.button)
+
+    async def setNewEmbed(self):
+        try:
+            api = urllib.request.urlopen(self.url)
+            data = json.load(api)
+            while True:
+                purl = data["data"]["children"][random.randint(0,25)]["data"]["url"]
+                if purl.endswith(".jpg") or purl.endswith(".png"):
+                    embed = discord.Embed(title="Reddit", colour=cogColor, type="image")
+                    embed.set_image(url=purl)
+                    embed.set_footer(text="Powered by Reddit")
+                    self.embed = embed
+                    return
+        except urllib.error.HTTPError as e:
+            if e.status == 429:
+                self.button.disabled = True
+                self.embed = discord.Embed(description="Es wurden zu viele Nachrichten geschickt. Versuche es bitte in ein paar Minuten nochmal.")
+            else:
+                self.embed = discord.Embed(description="Versuche es bitte gleich nochmal.")
+
+    async def getEmbed(self):
+        await self.setNewEmbed()
+        return self.embed
+
+    async def callback(self, i: discord.Interaction):
+        await i.response.edit_message(embed=await self.getEmbed(), view=self)

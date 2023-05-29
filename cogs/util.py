@@ -2,6 +2,8 @@ import discord, os, sys, wikipedia, urllib.request, json, requests, time
 from discord import app_commands, ButtonStyle
 from discord.ext import commands
 from discord.ui import Button, View
+
+
 cogColor = discord.Colour.dark_blue()
 
 
@@ -20,13 +22,13 @@ class Utility(commands.Cog):
             return
         page = wikipedia.page(pages[0], auto_suggest=False)
         embeds = []
-        title = discord.Embed(title="Wikipedia Suchergebnis", type="article")
+        title = discord.Embed(title="Wikipedia Suchergebnis", type="article", colour=cogColor)
         title.set_image(url=page.images[0])
         title.add_field(name=page.title, value=page.url)
         embeds.append(title)
         chunks = list(await self.chunkString(page.summary))
         for site in chunks:
-            embed = discord.Embed(title=f"{page.title} - Wikipedia Zusammenfassung")
+            embed = discord.Embed(title=f"{page.title} - Wikipedia Zusammenfassung", colour=cogColor)
             embed.set_thumbnail(url="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1024px-Wikipedia-logo-v2.svg.png")
             embed.add_field(name=" ", value=site)
             embeds.append(embed)
@@ -100,7 +102,7 @@ class Utility(commands.Cog):
             print(e)
             await i.response.send_message("Die Nachricht konnte nicht geschickt werden.", ephemeral=True)
 
-    @app_commands.command(name="calculator", description="Erstellt einen interaktiven Taschenrechner")
+    @app_commands.command(name="calculator", description="Erstellt einen interaktiven Taschenrechner.")
     async def calculator(self, i: discord.Interaction):
         view = CalculatorView()
         await i.response.send_message(view=view, embed=await view.getEmbed())
@@ -230,7 +232,7 @@ class CalculatorView(View):
         await self.updateMessage(i)
 
     async def getEmbed(self):
-        embed = discord.Embed(description=f"```{self.calclusion[-30:]}{' ' * (30-len(self.calclusion))}```")
+        embed = discord.Embed(description=f"```{self.calclusion[-30:]}{' ' * (30-len(self.calclusion))}```", colour=cogColor)
         return embed
 
     async def updateMessage(self, i: discord.Interaction):
