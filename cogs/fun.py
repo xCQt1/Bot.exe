@@ -72,13 +72,13 @@ class Fun(commands.Cog):
     @image.command(name="catgirl", description="Für Eric, damit er sich freut")
     async def catgirl(self, i: discord.Interaction):
         await i.response.defer(ephemeral=True)
-        view = RedditView("https://www.reddit.com/r/CatgirlSFW.json")
+        view = PostView("https://www.reddit.com/r/CatgirlSFW.json")
         await i.followup.send(embed=await view.getEmbed(), view=view)
 
     @image.command(name="awwnime", description="Auch für Eric, damit er sich noch mehr freut")
     async def awwnime(self, i: discord.Interaction):
         await i.response.defer(ephemeral=True)
-        view = RedditView("https://www.reddit.com/r/awwnime.json")
+        view = PostView("https://www.reddit.com/r/awwnime.json")
         await i.followup.send(embed=await view.getEmbed(), view=view)
 
 
@@ -86,7 +86,7 @@ async def setup(client):
     await client.add_cog(Fun(client))
 
 
-class RedditView(View):
+class PostView(View):
 
     embed: discord.Embed
     success = False
@@ -97,9 +97,12 @@ class RedditView(View):
         self.button = Button(emoji="🔁", label="Neuen Post laden", style=ButtonStyle.blurple)
         self.button.callback = self.newPost
         self.add_item(self.button)
-        self.saveButton = Button(emoji="💾", label="In DMs speichern", style=ButtonStyle.grey)
+        self.saveButton = Button(emoji="📨", label="Schick es mir!", style=ButtonStyle.grey)
         self.saveButton.callback = self.sendPostToDM
         self.add_item(self.saveButton)
+        self.revealButton = Button(emoji="🔓", style=ButtonStyle.blurple)
+        self.revealButton.callback = self.reveal
+        self.add_item(self.revealButton)
 
     async def setNewEmbed(self):
         try:
@@ -139,3 +142,8 @@ class RedditView(View):
 
     async def newPost(self, i: discord.Interaction):
         await i.response.edit_message(embed=await self.getEmbed(), view=self)
+
+    async def reveal(self, i: discord.Interaction):
+        self.revealButton.disabled = True
+        await i.response.edit_message(view=self)
+        await i.followup.send(embed=self.embed)
