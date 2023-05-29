@@ -89,27 +89,34 @@ async def setup(client):
 class RedditView(View):
 
     embed: discord.Embed
+    success = False
 
     def __init__(self, url: str):
         super().__init__()
         self.url = url
         self.button = Button(emoji="🔁", label="Neuen Post laden", style=ButtonStyle.blurple)
-        self.button.callback = self.callback
+        self.button.callback = self.newPost
         self.add_item(self.button)
+        self.saveButton = Button(emoji="💾", label="In DMs speichern", style=ButtonStyle.grey)
+        self.saveButton.callback = self.sendPostToDM
+        self.add_item(self.saveButton)
 
     async def setNewEmbed(self):
         try:
             api = urllib.request.urlopen(self.url)
             data = json.load(api)
             while True:
-                purl = data["data"]["children"][random.randint(0,25)]["data"]["url"]
+                pic = data["data"]["children"][random.randint(0,25)]["data"]
+                purl = pic["url"]
                 if purl.endswith(".jpg") or purl.endswith(".png"):
-                    embed = discord.Embed(title="Reddit", colour=cogColor, type="image")
+                    embed = discord.Embed(title=f"{pic['subreddit_name_prefixed']} - Post von {pic['author']}", colour=cogColor, type="image")
                     embed.set_image(url=purl)
                     embed.set_footer(text="Powered by Reddit")
                     self.embed = embed
+                    self.success = True
                     return
         except urllib.error.HTTPError as e:
+            self.success = False
             if e.status == 429:
                 self.button.disabled = True
                 self.embed = discord.Embed(description="Es wurden zu viele Nachrichten geschickt. Versuche es bitte in ein paar Minuten nochmal.")
@@ -118,7 +125,17 @@ class RedditView(View):
 
     async def getEmbed(self):
         await self.setNewEmbed()
+        self.saveButton.disabled = False if self.success else True
         return self.embed
 
-    async def callback(self, i: discord.Interaction):
+    async def sendPostToDM(self, i: discord.Interaction):
+        try:
+            embed = discord.Embed(description="Du hast dieses Bild gespeichert!")
+            await i.user.send(embeds=[embed, self.embed])
+            self.saveButton.disabled = True
+            await i.response.edit_message(view=self)
+        except Exception as e:
+            print(e)
+
+    async def newPost(self, i: discord.Interaction):
         await i.response.edit_message(embed=await self.getEmbed(), view=self)
