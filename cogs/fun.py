@@ -9,7 +9,6 @@ DNLINKS = {}
 with open("data/darknetlinks.json", mode="r") as file:
     DNLINKS = dict(json.loads(file.read()))
 IDKS = ["¯\\_(ツ)_/¯", "¯\\\\_(-\\_-)\\_/¯", "\\\\_(.\\_.)\\_/", "┐(´～｀;)┌", "ヽ(´ー｀)┌"]
-memeUrl = "https://meme-api.com/gimme"
 
 cogColor = discord.Colour.purple()
 
@@ -43,6 +42,7 @@ class Fun(commands.Cog):
         await i.response.send_message(random.choice(IDKS))
 
     @app_commands.command(name="quote", description="Errinnere jemanden an etwas, was er gesagt hat.")
+    @app_commands.describe(user="Der zu zitierende Nutzer", quote="Das Zitat")
     async def quote(self, i: discord.Interaction, user: discord.Member, quote: str):
         embed = discord.Embed(title=f"{user.name} sagte einst:", colour=cogColor)
         embed.add_field(name=f"*{quote}*", value="")
@@ -51,7 +51,7 @@ class Fun(commands.Cog):
     @app_commands.command(name="meme", description="Schickt ein Meme von Reddit")
     async def meme(self, i: discord.Interaction):
         await i.response.defer(ephemeral=True)
-        view = PostView(memeUrl)
+        view = PostView("https://meme-api.com/gimme")
         await i.followup.send(embed=await view.getEmbed(), view=view)
 
     image = app_commands.Group(name="image", description="Commands, die Bilder aus Subreddits schicken können.")

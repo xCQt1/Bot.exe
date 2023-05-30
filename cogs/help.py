@@ -8,51 +8,60 @@ cogColor = discord.Colour.red()
 githubLink = "https://github.com/xCQt1/Bot.exe"
 
 
-class Help(commands.GroupCog):
+class Help(commands.Cog):
 
     def __init__(self, client):
         self.client = client
 
-    @app_commands.command(name="info", description="Infos zu Bot.exe")
-    async def info(self, i: discord.Interaction):
-        embed = discord.Embed(title="Hilfe zum Bot", description="Danke, dass du Bot.exe nutzt!",
-                              colour=cogColor)
-        embed.add_field(name="Was ist Bot.exe?",
-                        value="Bot.exe ist ein Discord-Bot, der darauf abzielt, dich als User zu unterstützen und zu unterhalten!",
-                        inline=True)
-        embed.add_field(name="Wozu brauche ich Bot.exe?",
-                        value="Bot.exe kann dir helfen, Mitglieder zu kicken, zu bannen und wieder zu entbannen, Informationen über User oder Server anzuzeigen und viel mehr!")
-        embed.add_field(name="Was kann Bot.exe?",
-                        value="User kicken, bannen und verwarnen, Nachrichten löschen, Reddit-Bilder und Darknet-Links schicken und noch viel mehr!")
-        embed.add_field(name="Wird Bot.exe uns alle vernichten?",
-                        value="Hoffentlich nicht.")
-        await i.response.send_message(embed=embed)
+    @app_commands.command(name="help", description="Hilfreiches Q&A")
+    async def help(self, i: discord.Interaction):
+        view = HelpView()
+        await i.response.send_message(embed=await view.getInitEmbed(), view=view)
 
-    @app_commands.command(name="links", description="Links zum Bot")
-    async def links(self, i: discord.Interaction):
-        embed = discord.Embed(title="Links", color=cogColor)
-        embed.add_field(name="GitHub", value="Bot.exe ist auf GitHub! Dort kann man sich den Quellcode ansehen und bei der Entwicklung helfen.")
-        view = View().add_item(Button(label="GitHub", style=discord.ButtonStyle.gray, url=githubLink))
-        await i.response.send_message(embed=embed, view=view)
 
-    @app_commands.command(name="commands", description="Eine Übersicht über alle Commands.")
-    async def commands(self, i: discord.Interaction):
-        pass
+class HelpView(View):
+    embeds = [
+        discord.Embed(title="Was ist Bot.exe? Was kann er?",
+                      colour=cogColor
+                      ).add_field(name="Bot.exe ist ein Discord-Bot.",
+                                  value="Discord-Bots sind sehr nützlich: sie können Rollen oder Channels sowie Umfragen erstellen und auch mit Diensten außerhalb von Discord interagieren." +
+                                        "Damit sind sie unglaublich hilfreich für Moderatoren oder User eines Servers."
+                        ).add_field(name="Was kann Bot.exe?", value="Kurz gesagt: dir helfen, Spaß hier zu haben. Länger gesagt: er kann Umfragen erstellen, " +
+                                         "dir helfen, den Server zu verwalten, und Bilder von Reddit schicken. Rollen und Channels " +
+                                         "zu erstellen geht sehr schnell, genau wie das Löschen lästiger Nachrichten."),
+        discord.Embed(title="Kann ich Bot.exe auch auf meinem Server haben?",
+                      colour=cogColor
+                      ).add_field(name="Ja, kannst du!",
+                                  value="Klicke auf Bot.exe und dann auf den blauen Knopf mit \"Dem Server hinzufügen\". Das wars!"),
+        discord.Embed(title="Was kann ich machen, wenn ich ein Problem mit Bot.exe habe?",
+                      colour=cogColor
+                      ).add_field(name="Melde es einfach!",
+                                  value="Du kannst es entweder direkt einem Entwickler schicken, oder (bald) mit /feedback melden."),
+        discord.Embed(title="Gibt es den Sourcecode von Bot.exe online?",
+                      colour=cogColor
+                      ).add_field(name="Ja, gibt es!",
+                                  value=f"Und zwar auf GitHub, einer Platform, wo Entwickler Projekte veröffentlichen können. Das Projekt mit Bot.exe findest du [hier]({githubLink}).")
+    ]
 
-    class CommandsSelect(Select):
+    def __init__(self):
+        super().__init__()
+        self.select = Select(placeholder="Wähle eine Frage aus",
+                             options=[
+                                 SelectOption(label="Was ist Bot.exe? Was kann er?", value="0"),
+                                 SelectOption(label="Kann ich Bot.exe auch auf meinem Server haben?", value="1"),
+                                 SelectOption(label="Was kann ich machen, wenn ich ein Problem mit Bot.exe habe?", value="2"),
+                                 SelectOption(label="Gibt es den Sourcecode von Bot.exe online?", value="3")
+                             ])
+        self.select.callback = self.handler
+        self.add_item(self.select)
 
-        def __init__(self, client: discord.Client):
-            super().__init__(
-                placeholder="Wähle eine Kategorie",
-                min_values=1,
-                max_values=1,
-                options=[
-                    SelectOption(label="Administration"),
-                    SelectOption(label=""),
-                    SelectOption(label="")
-                ]
-            )
-            
+    async def handler(self, i: discord.Interaction):
+        index = int(self.select.values[0])
+        await i.response.edit_message(embed=self.embeds[index], view=self)
+
+    async def getInitEmbed(self):
+        embed = discord.Embed(title="Hallo! Wie kann man die helfen?", color=cogColor)
+        return embed
 
 
 async def setup(client):

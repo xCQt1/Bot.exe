@@ -185,7 +185,8 @@ class Administration(commands.Cog):
             await i.response.send_message("Der Channel konnte nicht gelöscht werden.")
 
     @app_commands.command(name="lock_channel", description="Schließt den Channel für eine Rolle.")
-    @app_commands.describe(channel="Channel, der geschlossen werden soll.", role="Eine bestimmte Rolle, für die der Channel geschlossen werden soll.")
+    @app_commands.describe(channel="Channel, der geschlossen werden soll.",
+                           role="Eine bestimmte Rolle, für die der Channel geschlossen werden soll.")
     async def lock_channel(self, i: discord.Interaction, channel: discord.TextChannel = None, role: discord.Role = None):
         if channel is None:
             channel = i.channel
@@ -199,7 +200,8 @@ class Administration(commands.Cog):
             await i.response.send_message("Der Channel konnte nicht geschlossen werden.")
 
     @app_commands.command(name="unlock_channel", description="Öffnet den Channel für eine Rolle.")
-    @app_commands.describe(channel="Channel, der geöffnte werden soll.", role="Eine bestimmte Rolle, für die der Channel geöffnet werden soll.")
+    @app_commands.describe(channel="Channel, der geöffnte werden soll.",
+                           role="Eine bestimmte Rolle, für die der Channel geöffnet werden soll.")
     async def unlock_channel(self, i: discord.Interaction, channel: discord.TextChannel = None, role: discord.Role = None):
         if channel is None:
             channel = i.channel

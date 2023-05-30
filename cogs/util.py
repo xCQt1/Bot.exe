@@ -103,9 +103,10 @@ class Utility(commands.Cog):
             await i.response.send_message("Die Nachricht konnte nicht geschickt werden.", ephemeral=True)
 
     @app_commands.command(name="calculator", description="Erstellt einen interaktiven Taschenrechner.")
-    async def calculator(self, i: discord.Interaction):
+    @app_commands.describe(private="Soll der Taschenrechner nur für dich sein?")
+    async def calculator(self, i: discord.Interaction, private: bool = False):
         view = CalculatorView()
-        await i.response.send_message(view=view, embed=await view.getEmbed())
+        await i.response.send_message(view=view, embed=await view.getEmbed(), ephemeral=private)
 
 
 async def setup(client):
