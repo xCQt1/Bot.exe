@@ -48,7 +48,7 @@ class VoteView(View):
     # Fixen: Select wird für alle deaktiviert, Lösung: array mit abgestimmtn Usern
 
     def __init__(self, name: str, options: list[str], maxVotes: int, i: discord.Interaction):
-        super().__init__()
+        super().__init__(timeout=None)
         self.name = name
         self.options = {}
         for option in options:

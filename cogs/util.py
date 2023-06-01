@@ -115,7 +115,7 @@ async def setup(client):
 
 class PageView(View):
     def __init__(self, pages: list[discord.Embed]):
-        super().__init__()
+        super().__init__(timeout=None)
         self.pages = pages
         self.site = 0
         self.beginButton = Button(label="⏮️", style=discord.ButtonStyle.green)
@@ -168,7 +168,7 @@ class CalculatorView(View):
     calclusion = "0"
     
     def __init__(self):
-        super().__init__()
+        super().__init__(timeout=None)
         button = CalculatorButton(label="C", style=ButtonStyle.blurple, row=0, calcView=self)
         self.add_item(button)
         button = CalculatorButton(label="(", style=ButtonStyle.grey, row=0, calcView=self)

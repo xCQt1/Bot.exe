@@ -79,7 +79,7 @@ class PostView(View):
     success = False
 
     def __init__(self, url: str):
-        super().__init__()
+        super().__init__(timeout=None)
         self.url = url
         self.button = Button(emoji="🔁", label="Neuen Post laden", style=ButtonStyle.blurple)
         self.button.callback = self.newPost

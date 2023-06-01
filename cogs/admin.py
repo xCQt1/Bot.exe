@@ -247,7 +247,7 @@ class Administration(commands.Cog):
 
     class AssignRoleUserSelect(View):
         def __init__(self, role: discord.Role):
-            super().__init__()
+            super().__init__(timeout=None)
             self.role = role
 
         @discord.ui.select(cls=UserSelect, placeholder="Wähle bis zu 20 User!", max_values=20)

@@ -16,7 +16,11 @@ class Help(commands.Cog):
     @app_commands.command(name="help", description="Hilfreiches Q&A")
     async def help(self, i: discord.Interaction):
         view = HelpView()
-        await i.response.send_message(embed=await view.getInitEmbed(), view=view)
+        await i.response.send_message(embed=await view.getInitEmbed(), view=view, ephemeral=True)
+
+
+async def setup(client):
+    await client.add_cog(Help(client))
 
 
 class HelpView(View):
@@ -44,7 +48,7 @@ class HelpView(View):
     ]
 
     def __init__(self):
-        super().__init__()
+        super().__init__(timeout=None)
         self.select = Select(placeholder="Wähle eine Frage aus",
                              options=[
                                  SelectOption(label="Was ist Bot.exe? Was kann er?", value="0"),
@@ -62,7 +66,3 @@ class HelpView(View):
     async def getInitEmbed(self):
         embed = discord.Embed(title="Hallo! Wie kann man die helfen?", color=cogColor)
         return embed
-
-
-async def setup(client):
-    await client.add_cog(Help(client))
