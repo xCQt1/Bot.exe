@@ -78,7 +78,10 @@ class PostView(View):
 
     embed: discord.Embed
     success = False
-    cachedData: dict
+    cachedData: dict = None
+    previousPics: list = []
+    after = ""
+    pagesCount = 0
 
     def __init__(self, url: str):
         super().__init__(timeout=None)
@@ -89,7 +92,7 @@ class PostView(View):
         self.saveButton = Button(emoji="📨", label="Schick es mir!", style=ButtonStyle.grey)
         self.saveButton.callback = self.sendPostToDM
         self.add_item(self.saveButton)
-        self.revealButton = Button(emoji="🔗", style=ButtonStyle.blurple)
+        self.revealButton = Button(emoji="🔓", style=ButtonStyle.blurple)
         self.revealButton.callback = self.reveal
         self.add_item(self.revealButton)
 
@@ -97,31 +100,46 @@ class PostView(View):
         post: dict
         try:
             if "reddit.com" in self.url:
-                api = urllib.request.urlopen(self.url)
+                url = self.url + (f"?after={self.after}" if self.after != "" else "")
+                api = urllib.request.urlopen(url)
                 data = json.load(api)
                 self.cachedData = data
                 while True:
-                    post = data["data"]["children"][random.randint(0,25)]["data"]
+                    posts = data["data"]["children"]
+                    post = posts[random.randint(0, len(posts) - 1)]["data"]
                     purl = post["url"]
-                    if purl.endswith(".jpg") or purl.endswith(".png"):
+                    if purl not in self.previousPics and (purl.endswith(".jpg") or purl.endswith(".gif") or purl.endswith(".png") or purl.endswith(".webp")):
+                        self.previousPics.append(purl)
                         break
+                    if len(self.previousPics) > 15 * self.pagesCount:
+                        self.after = data["data"]["after"]
+                        self.pagesCount += 1
             elif "meme-api" in self.url:
-                post = requests.get(self.url).json()
+                while True:
+                    post = requests.get(self.url).json()
+                    if post["url"] not in self.previousPics:
+                        self.previousPics.append(post["url"])
+                        break
             self.success = True
         except urllib.error.HTTPError as e:
             if self.cachedData is not None:
                 while True:
-                    post = self.cachedData["data"]["children"][random.randint(0,25)]["data"]
+                    posts = self.cachedData["data"]["children"]
+                    post = posts[random.randint(0, len(posts) - 1)]["data"]
                     purl = post["url"]
-                    if purl.endswith(".jpg") or purl.endswith(".png"):
+                    if purl not in self.previousPics and (purl.endswith(".jpg") or purl.endswith(".gif") or purl.endswith(".png") or purl.endswith(".webp")):
+                        self.previousPics.append(purl)
                         break
+                    if len(self.previousPics) > 15 * self.pagesCount:
+                        self.after = data["data"]["after"]
+                        self.pagesCount += 1
+                        url = self.url + (f"?after={self.after}" if self.after != "" else "")
+                        api = urllib.request.urlopen(url)
+                        data = json.load(api)
+                        self.cachedData = data
             else:
                 self.embed = discord.Embed(description="Versuche es bitte gleich nochmal.", colour=cogColor)
                 return
-        except Exception as e:
-            self.success = False
-            self.embed = discord.Embed(description="Versuche es bitte gleich nochmal.", colour=cogColor)
-            return
         self.embed = await self.buildEmbed(f"r/{post['subreddit']}", post["author"], post["url"])
 
     async def buildEmbed(self, subreddit: str, author: str, pictureUrl: str):
