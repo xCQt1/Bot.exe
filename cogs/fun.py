@@ -92,7 +92,7 @@ class PostView(View):
         self.saveButton = Button(emoji="📨", label="Schick es mir!", style=ButtonStyle.grey)
         self.saveButton.callback = self.sendPostToDM
         self.add_item(self.saveButton)
-        self.revealButton = Button(emoji="🔓", style=ButtonStyle.blurple)
+        self.revealButton = Button(emoji="💬", style=ButtonStyle.blurple)
         self.revealButton.callback = self.reveal
         self.add_item(self.revealButton)
 
@@ -130,13 +130,6 @@ class PostView(View):
                     if purl not in self.previousPics and (purl.endswith(".jpg") or purl.endswith(".gif") or purl.endswith(".png") or purl.endswith(".webp")):
                         self.previousPics.append(purl)
                         break
-                    if len(self.previousPics) > 15 * self.pagesCount:
-                        self.after = data["data"]["after"]
-                        self.pagesCount += 1
-                        url = self.url + (f"?after={self.after}" if self.after != "" else "")
-                        api = urllib.request.urlopen(url)
-                        data = json.load(api)
-                        self.cachedData = data
             else:
                 self.embed = discord.Embed(description="Versuche es bitte gleich nochmal.", colour=cogColor)
                 return
