@@ -24,6 +24,9 @@ async def setup(client):
 class TicTacToeView(View):
     players: dict[int, str]
     symbols = ["⭕", "❌"]
+    waysToWin = [[(0,0), (0,1), (0,2)], [(1,0), (1,1), (1,2)], [(2,0), (2,1), (2,2)], # horizontal
+                 [(0,0), (1,0), (2,0)], [(1,0), (1,1), (1,2)], [(2,0), (2,1), (2,2)], # vertikal
+                 [(0,0), (1,1), (2,2)], [(2,0), (1,1), (0,2)]] # diagonal
     buttons = []
 
     def __init__(self, players: list[discord.Member.id]):
@@ -42,34 +45,29 @@ class TicTacToeView(View):
                 temp.append(button)
             self.buttons.append(temp)
 
-    async def checkForEnd(self, i: discord.Interaction):
+    async def handleTurn(self, i: discord.Interaction):
         end = False
-        field = self.buttons
+        for way in self.waysToWin:
+            emoji = self.buttons[way[0][0]][way[0][1]].emoji
+            if all(self.buttons[coord[0]][coord[1]].emoji == emoji for coord in way):
+                end = True #if emoji in self.symbols else False
         if end:
-            await self.end(i)
-
-    async def end(self, i: discord.Interaction):
-        for buttons in self.buttons:
-            for button in buttons:
-                button.disabled = True
+            for buttons in self.buttons:
+                for button in buttons:
+                    button.disabled = True
         await i.response.edit_message(view=self)
-        await i.followup.send()
 
 
 class GameButton(Button):
-    clicked: bool = False
 
     def __init__(self, gameView: TicTacToeView, row: int):
-        super().__init__(row=row, style=ButtonStyle.blurple, emoji="⬜")
+        super().__init__(row=row, style=ButtonStyle.grey, emoji="⬜")
         self.gameView = gameView
 
     async def callback(self, i: discord.Interaction):
         if i.user.id not in self.gameView.players:
-            await i.response.send_message("Du bist kein Spieler in diesem Spiel. Wenn du auch spielen möchtest, guck dir doch mal /games an.", ephemeral=True)
+            await i.response.send_message("Du nimmst nicht an diesem Spiel teil. Wenn du auch spielen möchtest, guck dir doch mal /games an.", ephemeral=True)
             return
-        self.style = ButtonStyle.grey
         self.emoji = self.gameView.players[i.user.id]
-        self.clicked = False
         self.disabled = True
-        await i.response.edit_message(view=self.gameView)
-        await self.gameView.checkForEnd(i)
+        await self.gameView.handleTurn(i)
