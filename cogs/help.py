@@ -1,8 +1,12 @@
+import time
+
 import discord
 from discord.ext import commands
-from discord.ui import Button, View, Select
+from discord.ui import Button, View, Select, Modal, TextInput
 from discord import app_commands, SelectOption
 from typing import Literal
+
+import config
 
 cogColor = discord.Colour.red()
 githubLink = "https://github.com/xCQt1/Bot.exe"
@@ -18,9 +22,47 @@ class Help(commands.Cog):
         view = HelpView()
         await i.response.send_message(embed=await view.getInitEmbed(), view=view, ephemeral=True)
 
+    @app_commands.command(name="feedback", description="Möchtest du dem Developer etwas mitteilen? Einen Bug oder Geburtstagswünsche?")
+    async def feedback(self, i: discord.Interaction):
+        modal = FeedbackModal(self.client)
+        await i.response.send_modal(modal)
+
 
 async def setup(client):
     await client.add_cog(Help(client))
+
+
+class FeedbackModal(Modal):
+    def __init__(self, client: discord.Client):
+        self.client = client
+        super().__init__(title="Hinterlasse uns ein Feedback!")
+
+    fb_title = TextInput(
+        style=discord.TextStyle.short,
+        label="Statisfaction",
+        required=True,
+        max_length=20,
+        placeholder="Wie zufrieden bist du mit Bot.exe?"
+    )
+
+    fb_text = TextInput(
+        style=discord.TextStyle.long,
+        label="Message",
+        required=True,
+        placeholder="Gib hier dein Feedback ein",
+        max_length=1000
+    )
+
+    async def on_submit(self, i: discord.Interaction):
+        fbChannel = self.client.get_channel(config.FEEDBACK_CHANNEL_ID)
+        embed = discord.Embed(title=f"Feedback von {i.user.name}", description=f"Das Feedback wurde {time.strftime('%d.%m.%y um %h:%m')} in {i.guild.name} erstellt.", colour=cogColor)
+        embed.add_field(name="Wie zufrieden bist du mit Bot.exe?", value=self.fb_title.value, inline=False)
+        embed.add_field(name="Feedback:", value=self.fb_text.value, inline=False)
+        await fbChannel.send(embed=embed)
+        await i.response.send_message("Danke für dein Feedback! Du hilfst damit, Bot.exe weiter zu verbessern!")
+
+    async def on_error(self, i: discord.Interaction):
+        pass
 
 
 class HelpView(View):
