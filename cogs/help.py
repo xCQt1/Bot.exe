@@ -39,7 +39,7 @@ class FeedbackModal(Modal):
 
     fb_title = TextInput(
         style=discord.TextStyle.short,
-        label="Statisfaction",
+        label="Zufriedenheit",
         required=True,
         max_length=20,
         placeholder="Wie zufrieden bist du mit Bot.exe?"
@@ -47,7 +47,7 @@ class FeedbackModal(Modal):
 
     fb_text = TextInput(
         style=discord.TextStyle.long,
-        label="Message",
+        label="Feedback",
         required=True,
         placeholder="Gib hier dein Feedback ein",
         max_length=1000
@@ -55,13 +55,16 @@ class FeedbackModal(Modal):
 
     async def on_submit(self, i: discord.Interaction):
         fbChannel = self.client.get_channel(config.FEEDBACK_CHANNEL_ID)
-        embed = discord.Embed(title=f"Feedback von {i.user.name}", description=f"Das Feedback wurde {time.strftime('%d.%m.%y um %h:%m')} in {i.guild.name} erstellt.", colour=cogColor)
+        embed = discord.Embed(title=f"Feedback von {i.user.name}", description=f"Das Feedback wurde am **{time.strftime('%d.%m.%y')}** um **{time.strftime('%H:%M')}** in {i.guild.name} erstellt.", colour=cogColor)
         embed.add_field(name="Wie zufrieden bist du mit Bot.exe?", value=self.fb_title.value, inline=False)
         embed.add_field(name="Feedback:", value=self.fb_text.value, inline=False)
         await fbChannel.send(embed=embed)
-        await i.response.send_message("Danke für dein Feedback! Du hilfst damit, Bot.exe weiter zu verbessern!")
+        await i.response.send_message("Danke für dein Feedback! Du hilfst damit, Bot.exe weiter zu verbessern!", ephemeral=True)
 
-    async def on_error(self, i: discord.Interaction):
+    async def on_error(self, i: discord.Interaction, error):
+        pass
+
+    async def writeToJson(self, i: discord.Interaction):
         pass
 
 
