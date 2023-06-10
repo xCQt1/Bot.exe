@@ -84,11 +84,15 @@ class PostView(View):
     pagesCount = 0
 
     def __init__(self, url: str):
+        self.previousPics = []
         super().__init__(timeout=None)
         self.url = url
-        self.button = Button(emoji="🔁", label="Neuen Post laden", style=ButtonStyle.blurple)
-        self.button.callback = self.newPost
-        self.add_item(self.button)
+        self.prevButton = Button(emoji="⬅️", style=ButtonStyle.blurple)
+        self.prevButton.callback = self.loadPrevPost
+        self.add_item(self.prevButton)
+        self.newButton = Button(emoji="🔁", label="Neuer Post", style=ButtonStyle.blurple)
+        self.newButton.callback = self.newPost
+        self.add_item(self.newButton)
         self.saveButton = Button(emoji="📨", label="Schick es mir!", style=ButtonStyle.grey)
         self.saveButton.callback = self.sendPostToDM
         self.add_item(self.saveButton)
@@ -143,9 +147,13 @@ class PostView(View):
 
     async def getEmbed(self):
         await self.setNewEmbed()
+        await self.updateButtons()
+        return self.embed
+
+    async def updateButtons(self):
         self.saveButton.disabled = False if self.success else True
         self.revealButton.disabled = False if self.success else True
-        return self.embed
+        self.prevButton.disabled = False if len(self.previousPics) > 1 else True
 
     async def sendPostToDM(self, i: discord.Interaction):
         try:
@@ -158,6 +166,14 @@ class PostView(View):
 
     async def newPost(self, i: discord.Interaction):
         await i.response.edit_message(embed=await self.getEmbed(), view=self)
+
+    async def loadPrevPost(self, i: discord.Interaction):
+        embed = discord.Embed(title="Vorheriger Post", colour=cogColor)
+        embed.set_footer(text="Powered by Reddit")
+        embed.set_image(url=self.previousPics[-2])
+        self.previousPics = self.previousPics[:-1]
+        await self.updateButtons()
+        await i.response.edit_message(embed=embed, view=self)
 
     async def reveal(self, i: discord.Interaction):
         self.revealButton.disabled = True
