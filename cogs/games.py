@@ -13,6 +13,9 @@ class Games(commands.GroupCog):
     @app_commands.command(name="tictactoe", description="Ein einfaches Tic-Tac-Toe mit einem anderen Spieler.")
     @app_commands.describe(player="Der zweite Spieler")
     async def tictactoe(self, i: discord.Interaction, player: discord.User):
+        if player.id is i.user.id:
+            await i.response.send_message("Du kannst dieses Spiel nicht mit dir selbst spielen.", ephemeral=True)
+            return
         view = TicTacToeView([i.user.id, player.id], self.client)
         await i.response.send_message(view=view)
 
