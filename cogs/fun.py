@@ -1,6 +1,4 @@
-import discord, json, urllib.request, urllib.error, random, time, asyncio
-import requests
-import urllib3.request
+import discord, json, urllib.request, urllib.error, random, time, asyncio, requests
 from discord.ext import commands
 from discord import app_commands, ButtonStyle
 from discord.ui import View, Button

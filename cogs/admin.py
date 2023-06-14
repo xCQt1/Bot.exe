@@ -1,5 +1,4 @@
 import discord, requests, time
-
 from bs4 import BeautifulSoup
 from asyncer import asyncify
 from discord.ui import Select, UserSelect, RoleSelect, View

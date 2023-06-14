@@ -1,5 +1,3 @@
-from typing import Dict, Any
-
 import discord
 from discord import app_commands, ButtonStyle
 from discord.ext import commands

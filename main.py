@@ -1,6 +1,4 @@
-import os, discord, sys, config
-import time
-
+import os, discord, sys, config, time
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound, UserNotFound, RoleNotFound, ChannelNotFound, BotMissingPermissions, GuildNotFound
 

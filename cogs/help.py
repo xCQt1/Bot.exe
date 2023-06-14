@@ -1,12 +1,7 @@
-import time
-
-import discord
+import discord, config, time
 from discord.ext import commands
 from discord.ui import Button, View, Select, Modal, TextInput
 from discord import app_commands, SelectOption
-from typing import Literal
-
-import config
 
 cogColor = discord.Colour.red()
 githubLink = "https://github.com/xCQt1/Bot.exe"
@@ -54,6 +49,7 @@ class FeedbackModal(Modal):
     )
 
     async def on_submit(self, i: discord.Interaction):
+        await self.writeToJson(i)
         fbChannel = self.client.get_channel(config.FEEDBACK_CHANNEL_ID)
         embed = discord.Embed(title=f"Feedback von {i.user.name}", description=f"Das Feedback wurde am **{time.strftime('%d.%m.%y')}** um **{time.strftime('%H:%M')}** in {i.guild.name} erstellt.", colour=cogColor)
         embed.add_field(name="Wie zufrieden bist du mit Bot.exe?", value=self.fb_title.value, inline=False)
