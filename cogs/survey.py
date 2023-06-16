@@ -15,15 +15,15 @@ class Surveys(commands.GroupCog):
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(name="Der Name der Umfrage")
     async def create(self, i: discord.Interaction, name: str, option1: str, option2: str, option3: str = None, option4: str = None, votes_pp: int = 1):
-        if option1 is None or option2 is None:
-            await i.response.send_message(embed=discord.Embed(description="Es müssen Option 1 und 2 angegeben werden."), ephemeral=True)
         options = [option1, option2]
         if option3 is not None: options.append(option3)
         if option4 is not None: options.append(option4)
         if votes_pp < 1:
-            await i.response.send_message(embed=discord.Embed(description="Es muss mindestens eine Stimme pro Person abgegeben werden können."))
+            await i.response.send_message("Es muss mindestens eine Stimme pro Person abgegeben werden können.", ephemeral=True)
+            return
         elif votes_pp > len(options):
-            await i.response.send_message(embed=discord.Embed(description="Es können nicht mehr Stimmen als die Anzahl der Optionen abgegeben werden."))
+            await i.response.send_message("Die Anzahl der Stimmen wurde auf die Anzahl der Antwortmöglichkeiten beschränkt.", ephemeral=True)
+            votes_pp = len(options)
         view = VoteView(name, options, votes_pp, i)
         embed = view.getEmbed()
         await i.response.send_message(embed=embed, view=view)

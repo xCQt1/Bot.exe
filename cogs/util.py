@@ -165,7 +165,7 @@ class PageView(View):
 
 class CalculatorView(View):
 
-    calclusion = "0"
+    term = "0"
     
     def __init__(self):
         super().__init__(timeout=None)
@@ -212,28 +212,28 @@ class CalculatorView(View):
 
     async def calculate(self, i: discord.Interaction):
         try:
-            self.calclusion = str(eval(self.calclusion))
+            self.term = str(eval(self.term))
         except Exception as e:
-            self.calclusion = "Fehler"
+            self.term = "Fehler"
         await self.updateMessage(i)
 
     async def addSymbol(self, symbol, i: discord.Interaction):
-        if self.calclusion == "0" or self.calclusion == "Fehler":
-            self.calclusion = str(symbol)
+        if self.term == "0" or self.term == "Fehler":
+            self.term = str(symbol)
         else:
-            self.calclusion += str(symbol)
+            self.term += str(symbol)
         await self.updateMessage(i)
 
     async def clear(self, i: discord.Interaction):
-        self.calclusion = "0"
+        self.term = "0"
         await self.updateMessage(i)
 
     async def delLastSymbol(self, i: discord.Interaction):
-        self.calclusion = self.calclusion[:-1] if len(self.calclusion) > 1 else "0"
+        self.term = self.term[:-1] if len(self.term) > 1 else "0"
         await self.updateMessage(i)
 
     async def getEmbed(self):
-        embed = discord.Embed(description=f"```{self.calclusion[-30:]}{' ' * (30-len(self.calclusion))}```", colour=cogColor)
+        embed = discord.Embed(description=f"```{self.term[-30:]}{' ' * (30 - len(self.term))}```", colour=cogColor)
         return embed
 
     async def updateMessage(self, i: discord.Interaction):
