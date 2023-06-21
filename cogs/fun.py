@@ -124,7 +124,11 @@ class PostView(View):
                         break
             self.success = True
         except urllib.error.HTTPError as e:
-            if self.cachedData is not None:
+            if str(e.status) == "403":
+                self.embed = discord.Embed(description="Dieser Subreddit ist privat.")
+                self.clear_items()
+                return
+            elif self.cachedData is not None:
                 while True:
                     posts = self.cachedData["data"]["children"]
                     post = posts[random.randint(0, len(posts) - 1)]["data"]
