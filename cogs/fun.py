@@ -75,7 +75,10 @@ async def setup(client):
 class PostView(View):
 
     embed: discord.Embed
+    
     success = False
+    sub_private = False
+    
     cachedData: dict = None
     previousPics: list = []
     after = ""
@@ -126,7 +129,7 @@ class PostView(View):
         except urllib.error.HTTPError as e:
             if str(e.status) == "403":
                 self.embed = discord.Embed(description="Dieser Subreddit ist privat.")
-                self.clear_items()
+                self.sub_private = True
                 return
             elif self.cachedData is not None:
                 while True:
@@ -153,6 +156,7 @@ class PostView(View):
         return self.embed
 
     async def updateButtons(self):
+        self.newButton.disabled = self.sub_private
         self.saveButton.disabled = False if self.success else True
         self.revealButton.disabled = False if self.success else True
         self.prevButton.disabled = False if len(self.previousPics) > 1 else True
