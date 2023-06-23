@@ -124,6 +124,9 @@ class PostView(View):
                     response = requests.get(self.url)
                     if not response.ok:
                         print(response.status_code)
+                        self.embed = discord.Embed(description="Hier hat etwas nicht funktioniert.")
+                        self.success = False
+                        self.sub_private = True
                         return
                     post = response.json()
                     if post["url"] not in self.previousPics:
