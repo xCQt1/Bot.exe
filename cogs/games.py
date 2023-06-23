@@ -88,11 +88,9 @@ class GameButton(Button):
         if i.user.id not in self.gameView.players:
             await i.response.send_message("Du nimmst nicht an diesem Spiel teil. Wenn du auch spielen möchtest, guck dir doch mal /games an.", ephemeral=True)
             return
-        """
         elif i.user.id is self.gameView.playerPrev:
             await i.response.send_message("Bitte warte bis zu deinem Zug.", ephemeral=True)
             return
-        """
         self.clicked = True
         self.emoji = self.gameView.players[i.user.id]
         self.disabled = True
