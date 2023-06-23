@@ -75,14 +75,6 @@ async def setup(client):
 class PostView(View):
 
     embed: discord.Embed
-    
-    success = False
-    sub_private = False
-    
-    cachedData: dict = None
-    previousPics: list = []
-    after = ""
-    pagesCount = 0
 
     def __init__(self, url: str):
         self.previousPics = []
@@ -100,6 +92,14 @@ class PostView(View):
         self.revealButton = Button(emoji="💬", style=ButtonStyle.blurple)
         self.revealButton.callback = self.reveal
         self.add_item(self.revealButton)
+
+        self.success = False
+        self.sub_private = False
+
+        self.cachedData: dict = {}
+        self.previousPics: list = []
+        self.after = ""
+        self.pagesCount = 0
 
     async def setNewEmbed(self):
         post: dict
@@ -121,14 +121,18 @@ class PostView(View):
                         self.pagesCount += 1
             elif "meme-api" in self.url:
                 while True:
-                    post = requests.get(self.url).json()
+                    response = requests.get(self.url)
+                    if not response.ok:
+                        print(response.status_code)
+                        return
+                    post = response.json()
                     if post["url"] not in self.previousPics:
                         self.previousPics.append(post["url"])
                         break
             self.success = True
         except urllib.error.HTTPError as e:
             if str(e.status) == "403":
-                self.embed = discord.Embed(description="Dieser Subreddit ist privat.")
+                self.embed = discord.Embed(title="🔒 Dieser Subreddit ist privat.", description="Du kannst gerade nicht auf diesen Subreddit zugreifen. Versuche es bitte später wieder.")
                 self.sub_private = True
                 return
             elif self.cachedData is not None:
