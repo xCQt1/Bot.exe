@@ -181,12 +181,12 @@ class PostView(View):
         await i.response.edit_message(embed=await self.getEmbed(), view=self)
 
     async def loadPrevPost(self, i: discord.Interaction):
-        embed = discord.Embed(title="Vorheriger Post", colour=cogColor)
-        embed.set_footer(text="Powered by Reddit")
-        embed.set_image(url=self.previousPics[-2])
+        self.embed = discord.Embed(title="Vorheriger Post", colour=cogColor)
+        self.embed.set_footer(text="Powered by Reddit")
+        self.embed.set_image(url=self.previousPics[-2])
         self.previousPics = self.previousPics[:-1]
         await self.updateButtons()
-        await i.response.edit_message(embed=embed, view=self)
+        await i.response.edit_message(embed=self.embed, view=self)
 
     async def reveal(self, i: discord.Interaction):
         self.revealButton.disabled = True
