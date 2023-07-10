@@ -1,4 +1,4 @@
-import discord, config, time
+import discord, config, time, json
 from discord.ext import commands
 from discord.ui import Button, View, Select, Modal, TextInput
 from discord import app_commands, SelectOption
@@ -49,7 +49,7 @@ class FeedbackModal(Modal):
     )
 
     async def on_submit(self, i: discord.Interaction):
-        await self.writeToJson(i)
+        await self.writeToJson(i, self.fb_text.value)
         fbChannel = self.client.get_channel(config.FEEDBACK_CHANNEL_ID)
         embed = discord.Embed(title=f"Feedback von {i.user.name}", description=f"Das Feedback wurde am **{time.strftime('%d.%m.%y')}** um **{time.strftime('%H:%M')}** in {i.guild.name} erstellt.", colour=cogColor)
         embed.add_field(name="Wie zufrieden bist du mit Bot.exe?", value=self.fb_title.value, inline=False)
@@ -58,10 +58,22 @@ class FeedbackModal(Modal):
         await i.response.send_message("Danke für dein Feedback! Du hilfst damit, Bot.exe weiter zu verbessern!", ephemeral=True)
 
     async def on_error(self, i: discord.Interaction, error):
-        pass
+        print(error.with_traceback())
+        print(error.args)
 
-    async def writeToJson(self, i: discord.Interaction):
-        pass
+    async def writeToJson(self, i: discord.Interaction, feedback_text):
+        try:
+            with open("data/feedback.json", mode="w") as file:
+                content = json.load(file)
+                entry = {
+                    time.time(): [i.user.id, feedback_text]
+                }
+                content.append(entry)
+                json.dump(content, file)
+        except Exception as e:
+            print(e.args)
+            print(e.with_traceback())
+        print("created feedback entry in feedback.json")
 
 
 class HelpView(View):

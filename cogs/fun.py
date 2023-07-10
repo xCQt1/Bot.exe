@@ -138,9 +138,9 @@ class PostView(View):
                 self.embed = discord.Embed(title="🔒 Dieser Subreddit ist privat.", description="Du kannst gerade nicht auf diesen Subreddit zugreifen. Versuche es bitte später wieder.")
                 self.sub_private = True
                 return
-            elif self.cachedData is not None:
+            elif self.cachedData is not None or self.cachedData is not {}:
+                posts = self.cachedData["data"]["children"]
                 while True:
-                    posts = self.cachedData["data"]["children"]
                     post = posts[random.randint(0, len(posts) - 1)]["data"]
                     purl = post["url"]
                     if purl not in self.previousPics and (purl.endswith(".jpg") or purl.endswith(".gif") or purl.endswith(".png") or purl.endswith(".webp")):
