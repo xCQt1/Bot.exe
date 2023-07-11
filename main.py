@@ -9,20 +9,23 @@ client.remove_command("help")
 
 TOKEN = config.DISCORD_TOKEN
 
+logger = config.logging.getLogger("bot")
+command_logger = config.logging.getLogger("commands")
+
 
 async def loadCogs():
     for file in os.listdir("cogs"):
         if file.endswith(".py"):
             await client.load_extension(f"cogs.{file[:-3]}")
-            print(f"-> {file} geladen")
-    print("Alle Module geladen!\n\r")
+            logger.info(f"Cog {file} geladen!")
+    logger.info("Alle Cogs geladen!")
 
 
 @client.event
 async def on_ready():
     await loadCogs()
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f"dich an"))
-    await printInfos()
+    logger.info(f"Eingeloggt als {client.user.name}")
 
 
 async def printInfos():
@@ -36,17 +39,16 @@ async def printInfos():
 async def on_guild_join(guild: discord.Guild):
     client.tree.copy_global_to(guild=guild)
     await client.tree.sync(guild=guild)
-    print(f"{guild.name} beigetreten: Synced!")
+    logger.info(f"Dem Server {guild.name} beigetreten: Commands synced!")
 
 
 @client.event
 async def on_member_join(member: discord.Member):
-    channel = discord.utils.get(member.guild.text_channels, name="willkommen")
     embed = discord.Embed(title=f"Willkommen auf {member.guild.name}, {member}!",
                           colour=discord.Colour.blue())
     embed.set_thumbnail(url=member.guild.icon)
-    await channel.send(embed=embed)
-    print(f"{member.name} ist dem Server {member.guild.name} beigetreten.")
+    await member.send(embed=embed)
+    logger.info(f"{member.name} ist Server {member.guild.name} beigetreten.")
 
 
 @client.event
@@ -81,11 +83,11 @@ async def on_command_error(ctx, error):
 @client.command()
 @commands.is_owner()
 async def sync(ctx):
+    #command_logger.info(f"{ctx.user.name} hat Sync benutzt")
     try:
         await client.tree.sync()
         print("Synced.")
     except discord.HTTPException as e:
-        print("Syncing fehlgeschlagen:")
-        print(e)
+        print("Syncing fehlgeschlagen: ", e)
 
-client.run(TOKEN)
+client.run(TOKEN, root_logger=True)
