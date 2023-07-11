@@ -84,7 +84,7 @@ class VoteView(View):
 
     def getEmbed(self):
         embed = discord.Embed(title=self.name, colour=cogColor)
-        embed.set_footer(text=f"Gesamte Anzahl von Stimmen: {self.totalvotes}\n\rAbgestimmte Personen: {len(self.usersVoted)}")
+        embed.set_footer(text=f"Anzahl Stimmen: {self.totalvotes}\n\rAbgestimmte Personen: {len(self.usersVoted)}")
         for i, option in enumerate(self.options):
             embed.add_field(name=f"{self.numbers[i]} {option}", value=self.getProgressbar(option), inline=False)
         return embed
