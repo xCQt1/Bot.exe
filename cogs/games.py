@@ -54,19 +54,28 @@ class TicTacToeView(View):
         for way in self.waysToWin:
             emoji = self.buttons[way[0][0]][way[0][1]].emoji
             if all(self.buttons[coord[0]][coord[1]].emoji == emoji for coord in way) and all(self.buttons[coord[0]][coord[1]].clicked for coord in way):
-                end = True
-                match = way
-        if end:
-            for buttons in self.buttons:
-                for button in buttons:
-                    button.disabled = True
-            self.clear_items()
-            await i.response.edit_message(view=self, embed=await self.createEndEmbed(match))
+                await self.handleEnd(i, way)
+                return
+        if all(all(button.clicked for button in row) for row in self.buttons):
+            await self.handleEnd(i)
         else:
             await i.response.edit_message(view=self)
 
-    async def createEndEmbed(self, way: list[tuple]):
-        embed = discord.Embed(title=f"{self.client.get_user(self.playerPrev).name} hat das Spiel gewonnen!")
+    async def handleEnd(self, i: discord.Interaction, way=None):
+        await i.message.delete()
+        await self.disableAllButtons()
+        await i.response.send_message(embed=await self.createEndEmbed(way))
+
+    async def disableAllButtons(self):
+        for buttons in self.buttons:
+            for button in buttons:
+                button.disabled = True
+
+    async def createEndEmbed(self, way: list[tuple] = None):
+        if way is not None:
+            embed = discord.Embed(title=f"{self.client.get_user(self.playerPrev).name} hat das Spiel gewonnen!")
+        else:
+            embed = discord.Embed(title="Das Spiel ist unentschieden!")
         field = ""
         for row in self.buttons:
             for button in row:

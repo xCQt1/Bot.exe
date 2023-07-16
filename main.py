@@ -68,13 +68,15 @@ async def on_message(message: discord.Message):
 async def on_command_error(ctx, error):
     if isinstance(error, CommandNotFound):
         await ctx.send("Der Befehl konnte nicht gefunden werden.")
-    if isinstance(error, UserNotFound):
+    elif isinstance(error, UserNotFound):
         await ctx.send("Dieser User konnte nicht gefunden werden.")
-    if isinstance(error, ChannelNotFound):
+    elif isinstance(error, ChannelNotFound):
         await ctx.send("Dieser Channel konnte nicht gefunden werden.")
-    if isinstance(error, GuildNotFound):
+    elif isinstance(error, GuildNotFound):
         await ctx.send("Dieser Server konnte nicht gefunden werden.")
-    if isinstance(error, BotMissingPermissions):
+    elif isinstance(error, RoleNotFound):
+        await ctx.send("Diese Rolle konnte nicht gefunden werden.")
+    elif isinstance(error, BotMissingPermissions):
         await ctx.send("Für diese Aktion fehlen mir Berechtigungen.")
         await client.get_user(ctx.guild.owner_id).send(embed=discord.Embed(title=f"Es gibt ein Problem in {ctx.guild.name}!",
                                                                            description="Bitte gib Bot.exe Administrator-Rechte, damit alle Befehle fehlerfrei funktionieren!"))
@@ -83,7 +85,7 @@ async def on_command_error(ctx, error):
 @client.command()
 @commands.is_owner()
 async def sync(ctx):
-    #command_logger.info(f"{ctx.user.name} hat Sync benutzt")
+    command_logger.info(f"{ctx.user.name} hat Sync benutzt")
     try:
         await client.tree.sync()
         print("Synced.")
