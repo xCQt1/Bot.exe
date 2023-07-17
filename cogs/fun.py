@@ -58,14 +58,24 @@ class Fun(commands.Cog):
     @image.command(name="catgirl", description="Für Eric, damit er sich freut")
     async def catgirl(self, i: discord.Interaction):
         await i.response.defer(ephemeral=True)
-        view = PostView("https://www.reddit.com/r/CatgirlSFW.json")
+        view = PostView("r/CatgirlSFW")
         await i.followup.send(embed=await view.getEmbed(), view=view)
 
     @image.command(name="awwnime", description="Auch für Eric, damit er sich noch mehr freut")
     async def awwnime(self, i: discord.Interaction):
         await i.response.defer(ephemeral=True)
-        view = PostView("https://www.reddit.com/r/awwnime.json")
+        view = PostView("r/awwnime")
         await i.followup.send(embed=await view.getEmbed(), view=view)
+
+    @app_commands.command(name="reddit", description="Schickt Bilder aus einem Subreddit")
+    @app_commands.describe(subreddit="Der Subreddit, aus dem Bilder geschicht werden sollen. Beispiel: r/memes")
+    async def reddit(self, i: discord.Interaction, subreddit: str):
+        await i.response.defer(ephemeral=True)
+        try:
+            view = PostView(subreddit)
+            await i.followup.send(embed=await view.getEmbed(), view=view)
+        except Exception as e:
+            await i.followup.send(f"Der Subbreddit {subreddit} ist leider nicht gültig.")
 
 
 async def setup(client):
@@ -76,10 +86,12 @@ class PostView(View):
 
     embed: discord.Embed
 
-    def __init__(self, url: str):
+    def __init__(self, subreddit: str):
         self.previousPics = []
         super().__init__(timeout=None)
-        self.url = url
+        self.url = f"https://www.reddit.com/{subreddit}.json"
+        if self.testUrl():
+            raise Exception("Dieser Subreddit ist nicht gültig")
         self.prevButton = Button(emoji="⬅️", style=ButtonStyle.blurple)
         self.prevButton.callback = self.loadPrevPost
         self.add_item(self.prevButton)
@@ -100,6 +112,10 @@ class PostView(View):
         self.previousPics: list = []
         self.after = ""
         self.pagesCount = 0
+
+    def testUrl(self):
+        request = requests.get(self.url)
+        return request.status_code is 404
 
     async def setNewEmbed(self):
         post: dict

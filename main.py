@@ -85,11 +85,10 @@ async def on_command_error(ctx, error):
 @client.command()
 @commands.is_owner()
 async def sync(ctx):
-    command_logger.info(f"{ctx.user.name} hat Sync benutzt")
     try:
         await client.tree.sync()
-        print("Synced.")
+        logger.info("Synced.")
     except discord.HTTPException as e:
-        print("Syncing fehlgeschlagen: ", e)
+        logger.error("Syncing fehlgeschlagen: ", e)
 
 client.run(TOKEN, root_logger=True)
