@@ -32,14 +32,6 @@ class FeedbackModal(Modal):
         self.client = client
         super().__init__(title="Hinterlasse uns ein Feedback!")
 
-    fb_title = TextInput(
-        style=discord.TextStyle.short,
-        label="Zufriedenheit",
-        required=True,
-        max_length=20,
-        placeholder="Wie zufrieden bist du mit Bot.exe?"
-    )
-
     fb_text = TextInput(
         style=discord.TextStyle.long,
         label="Feedback",
@@ -52,7 +44,6 @@ class FeedbackModal(Modal):
         await self.writeToJson(i, self.fb_text.value)
         fbChannel = self.client.get_channel(config.FEEDBACK_CHANNEL_ID)
         embed = discord.Embed(title=f"Feedback von {i.user.name}", description=f"Das Feedback wurde am **{time.strftime('%d.%m.%y')}** um **{time.strftime('%H:%M')}** in {i.guild.name} erstellt.", colour=cogColor)
-        embed.add_field(name="Wie zufrieden bist du mit Bot.exe?", value=self.fb_title.value, inline=False)
         embed.add_field(name="Feedback:", value=self.fb_text.value, inline=False)
         await fbChannel.send(embed=embed)
         await i.response.send_message("Danke für dein Feedback! Du hilfst damit, Bot.exe weiter zu verbessern!", ephemeral=True)

@@ -23,7 +23,8 @@ class Utility(commands.Cog):
         page = wikipedia.page(pages[0], auto_suggest=False)
         embeds = []
         title = discord.Embed(title="Wikipedia Suchergebnis", type="article", colour=cogColor)
-        title.set_image(url=page.images[0])
+        if (len(page.images) > 0):
+            title.set_image(url=page.images[0])
         title.add_field(name=page.title, value=page.url)
         embeds.append(title)
         chunks = list(await self.chunkString(page.summary))

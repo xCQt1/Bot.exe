@@ -49,6 +49,7 @@ class Fun(commands.Cog):
         
     @app_commands.command(name="meme", description="Schickt ein Meme von Reddit")
     async def meme(self, i: discord.Interaction):
+        await i.response.send_message("Dieser Command funktioniert gerade leider nicht.", ephemeral=True)
         await i.response.defer(ephemeral=True)
         view = PostView("https://meme-api.com/gimme")
         await i.followup.send(embed=await view.getEmbed(), view=view)
@@ -90,9 +91,9 @@ class PostView(View):
         self.previousPics = []
         super().__init__(timeout=None)
         self.url = f"https://www.reddit.com/{subreddit}.json"
-        if self.testUrl():
+        if str(requests.get(self.url).status_code).startswith("4"):
             raise Exception("Dieser Subreddit ist nicht gültig")
-        self.prevButton = Button(emoji="⬅️", style=ButtonStyle.blurple)
+        self.prevButton = Button(emoji="⬅️", style=ButtonStyle.blurple, row=2)
         self.prevButton.callback = self.loadPrevPost
         self.add_item(self.prevButton)
         self.newButton = Button(emoji="🔁", label="Neuer Post", style=ButtonStyle.blurple)
@@ -104,6 +105,8 @@ class PostView(View):
         self.revealButton = Button(emoji="💬", style=ButtonStyle.blurple)
         self.revealButton.callback = self.reveal
         self.add_item(self.revealButton)
+        self.linkButton = Button(label="Post öffnen", url=self.url)
+        self.add_item(self.linkButton)
 
         self.success = False
         self.sub_private = False
@@ -112,10 +115,6 @@ class PostView(View):
         self.previousPics: list = []
         self.after = ""
         self.pagesCount = 0
-
-    def testUrl(self):
-        request = requests.get(self.url)
-        return request.status_code is 404
 
     async def setNewEmbed(self):
         post: dict

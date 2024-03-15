@@ -18,6 +18,12 @@ class Games(commands.GroupCog):
         await i.response.send_message(view=view)
 
 
+    @app_commands.command(name="slots", description="Hast du Bock auf das ganz große Geld? Schreit der Knossi in dir? Dann spiel jetzt Slots!")
+    async def slots(self, i: discord.Interaction):
+        view = SlotView()
+        await i.response.send_message("Hieran wird gerade noch gearbeitet!")
+
+
 async def setup(client):
     await client.add_cog(Games(client))
 
@@ -104,3 +110,22 @@ class GameButton(Button):
         self.emoji = self.gameView.players[i.user.id]
         self.disabled = True
         await self.gameView.handleTurn(i)
+
+
+class SlotView(View):
+    default = "⬜"
+    symbols = {
+        "🃏": 1,
+        "♠️": 3,
+        "🍎": 5,
+        "🍋": 10,
+        "🍒": 20,
+        "🫐": 30
+    }
+
+    def __init__(self):
+        super.__init__()
+        pool: list[str]
+        for symbol in self.symbols:
+            list += [symbol]*self.symbols[symbol]
+        print(pool)

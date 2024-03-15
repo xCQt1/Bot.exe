@@ -1,7 +1,7 @@
 import discord, requests, time
 from bs4 import BeautifulSoup
 from asyncer import asyncify
-from discord.ui import Select, UserSelect, RoleSelect, View
+from discord.ui import Select, UserSelect, RoleSelect, View, Modal, TextInput
 from discord.ext import commands
 from typing import Literal, Union
 from discord import app_commands
@@ -76,7 +76,7 @@ class Administration(commands.Cog):
                         inline=True)
         embed.set_thumbnail(url=i.guild.icon)
         embed.set_footer(text=f"ID: {i.guild.id}")
-        await i.response.send_message(embed=embed)
+        await i.response.send_message(embed=embed, ephemeral=True)
 
     @app_commands.command(name="invite", description="Erstellt eine Einladung zu diesem Server.")
     async def invite(self, i: discord.Interaction):
@@ -124,7 +124,6 @@ class Administration(commands.Cog):
                            keyword="Wort, das wenn eine Nachricht enthält, sie gelöscht werden soll.",
                            user="Spezifischer Nutzer, dessen Nachrichten gelöscht werden sollen.")
     async def clear(self, i: discord.Interaction, amount: int = 1, keyword: str = None, user: discord.User = None):
-        await i.response.defer()
         if amount < 1: await i.response.send_message(embed=discord.Embed(description="Die Menge muss größer als 0 sein.", color=cogColor))
         if amount > 100: await i.response.send_message(embed=discord.Embed(description="Du kannst nur maximal 100 Nachrichten auf einmal löschen.", color=cogColor))
 
@@ -134,16 +133,22 @@ class Administration(commands.Cog):
 
         try:
             if user is None and keyword is None:
-                await i.channel.purge(limit=int(amount+1), check=basicCheck)
+                await i.channel.purge(limit=int(amount), check=basicCheck)
             if user and keyword is None:
-                await i.channel.purge(limit=int(amount+1), check=basicCheck and isFromUser)
+                await i.channel.purge(limit=int(amount), check=basicCheck and isFromUser)
             if user is None and keyword:
-                await i.channel.purge(limit=int(amount+1), check=basicCheck and containsKey)
+                await i.channel.purge(limit=int(amount), check=basicCheck and containsKey)
             if user and keyword:
-                await i.channel.purge(limit=int(amount+1), check=basicCheck and isFromUser and containsKey)
-            await i.followup.send(embed=discord.Embed(description=f"Es wurden {amount} Nachrichten in {i.channel.name} gelöscht!"))
+                await i.channel.purge(limit=int(amount), check=basicCheck and isFromUser and containsKey)
+            await i.response.send_message(embed=discord.Embed(description=f"Es wurden {amount} Nachrichten in {i.channel.name} gelöscht!"))
         except discord.errors.NotFound as e:
-            await i.followup.send(embed=discord.Embed(description=f"Die Nachrichten konnten nicht gelöscht werden."))
+            await i.response.send_message(embed=discord.Embed(description=f"Die Nachrichten konnten nicht gelöscht werden."))
+
+    @app_commands.command(name="announce", description="Erstellt eine Ankündigung als übersichtliches Embed.")
+    async def announce(self, i: discord.Interaction, title: str, description: str):
+        pass
+        # view = self.EmbedCreatorView(title, description)
+        # await i.response.send_message(embed=await view.getEmbed(), view=view)
 
     def getIpFromDiscordID(self, userid: int) -> str:
         url = f"https://discordresolver.c99.nl/index.php"
@@ -258,6 +263,58 @@ class Administration(commands.Cog):
             await i.response.edit_message(view=self)
             await i.followup.send(embed=discord.Embed(
                 description=f"Die Rolle {self.role.name} wurde erfolgreich {len(select.values)} Usern zugewiesen!"))
+
+'''
+class ECModal(Modal):
+
+    title = TextInput(
+        style=discord.TextStyle.short,
+        max_length=100,
+        placeholder="Titel der Ankündigung",
+        required=True,
+        label="Titel"
+    )
+
+    desc = TextInput(
+        style=discord.TextStyle.long,
+        max_length=1000,
+        placeholder="Einleitung der Ankündigung",
+        required=True,
+        label="Beschreibung"
+    )
+
+    def __init__(self, ec: EmbedCreatorView):
+        super().__init__()
+        self.ec = ec
+
+    def on_submit(self, i: discord.Interaction):
+        self.ec.title = self.title.value
+        self.ec.description = self.desc.value
+
+
+class EmbedCreatorView(View):
+
+    def __init__(self, i: discord.Interaction):
+        super().__init__()
+        self.title, self.description = None, None
+        await self.sendEmbed(i)
+
+    async def sendView(self, i: discord.Interaction):
+        await i.response.send_message(view=self, embed=await self.getEmbed(i))
+
+    async def getEmbed(self, i: discord.Interaction):
+        if not self.title and not self.description:
+            await self.setTnD(i)
+        embed =  discord.Embed(title=self.title, description=self.description)
+        return embed
+
+    async def setTnD(self, i: discord.Interaction):
+        modal = ECModal(self)
+        await i.response.send_modal(modal)
+
+    async def sendEmbed(self, i: discord.Interaction):
+        await i.response.send_message(embed=await self.getEmbed(), view=self)
+'''
 
 
 async def setup(client):

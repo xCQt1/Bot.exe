@@ -31,7 +31,7 @@ class Surveys(commands.GroupCog):
     @app_commands.command(name="end", description="Beendet eine Umfrage, sodass nicht mehr abgestimmt werden kann.")
     @app_commands.checks.has_permissions(administrator=True)
     async def end(self, i: discord.Interaction):
-        pass
+        await i.response.send_message("An dieser Funktion wird gerade noch gearbeitet!", ephemeral=True)
 
 
 async def setup(client):
