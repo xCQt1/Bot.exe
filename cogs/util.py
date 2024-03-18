@@ -109,6 +109,10 @@ class Utility(commands.Cog):
         view = CalculatorView()
         await i.response.send_message(view=view, embed=await view.getEmbed(), ephemeral=private)
 
+    @app_commands.command(name="permissions", description="Zeigt dir die Berechtigungen, die deine Rollen dir geben")
+    async def permissions(self, i: discord.Interaction):
+        pass
+
 
 async def setup(client):
     await client.add_cog(Utility(client))

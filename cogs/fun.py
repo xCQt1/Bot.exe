@@ -46,12 +46,11 @@ class Fun(commands.Cog):
         embed = discord.Embed(title=f"{user.name} sagte einst:", colour=cogColor)
         embed.add_field(name=f"*{quote}*", value="")
         await i.response.send_message(embed=embed)
-        
+
     @app_commands.command(name="meme", description="Schickt ein Meme von Reddit")
     async def meme(self, i: discord.Interaction):
-        await i.response.send_message("Dieser Command funktioniert gerade leider nicht.", ephemeral=True)
         await i.response.defer(ephemeral=True)
-        view = PostView("https://meme-api.com/gimme")
+        view = MemeView()
         await i.followup.send(embed=await view.getEmbed(), view=view)
 
     image = app_commands.Group(name="image", description="Commands, die Bilder aus Subreddits schicken können.")
@@ -59,24 +58,21 @@ class Fun(commands.Cog):
     @image.command(name="catgirl", description="Für Eric, damit er sich freut")
     async def catgirl(self, i: discord.Interaction):
         await i.response.defer(ephemeral=True)
-        view = PostView("r/CatgirlSFW")
+        view = RedditView("r/CatgirlSFW", i.channel.nsfw)
         await i.followup.send(embed=await view.getEmbed(), view=view)
 
     @image.command(name="awwnime", description="Auch für Eric, damit er sich noch mehr freut")
     async def awwnime(self, i: discord.Interaction):
         await i.response.defer(ephemeral=True)
-        view = PostView("r/awwnime")
+        view = RedditView("r/awwnime", i.channel.nsfw)
         await i.followup.send(embed=await view.getEmbed(), view=view)
 
     @app_commands.command(name="reddit", description="Schickt Bilder aus einem Subreddit")
     @app_commands.describe(subreddit="Der Subreddit, aus dem Bilder geschicht werden sollen. Beispiel: r/memes")
     async def reddit(self, i: discord.Interaction, subreddit: str):
         await i.response.defer(ephemeral=True)
-        try:
-            view = PostView(subreddit)
-            await i.followup.send(embed=await view.getEmbed(), view=view)
-        except Exception as e:
-            await i.followup.send(f"Der Subbreddit {subreddit} ist leider nicht gültig.")
+        view = RedditView(subreddit, i.channel.nsfw)
+        await i.followup.send(embed=await view.getEmbed(), view=view)
 
 
 async def setup(client):
@@ -84,118 +80,92 @@ async def setup(client):
 
 
 class PostView(View):
-
     embed: discord.Embed
 
-    def __init__(self, subreddit: str):
+    def __init__(self, nsfw: bool, url: str):
         self.previousPics = []
         super().__init__(timeout=None)
-        self.url = f"https://www.reddit.com/{subreddit}.json"
+
+        # Setting URL and checking it
+        self.url = url
         if str(requests.get(self.url).status_code).startswith("4"):
-            raise Exception("Dieser Subreddit ist nicht gültig")
-        self.prevButton = Button(emoji="⬅️", style=ButtonStyle.blurple, row=2)
+            raise Exception(f"Hier hat etwas nicht geklappt")
+
+        # Setting up the buttons
+        self.prevButton = Button(emoji="⬅️", style=ButtonStyle.blurple, row=1)  # back button
         self.prevButton.callback = self.loadPrevPost
         self.add_item(self.prevButton)
-        self.newButton = Button(emoji="🔁", label="Neuer Post", style=ButtonStyle.blurple)
+        self.newButton = Button(emoji="🔁", label="Neuer Post", style=ButtonStyle.blurple)  # reload button
         self.newButton.callback = self.newPost
         self.add_item(self.newButton)
-        self.saveButton = Button(emoji="📨", label="Schick es mir!", style=ButtonStyle.grey)
+        self.saveButton = Button(emoji="📨", label="Schick es mir!", style=ButtonStyle.grey)  # dm button
         self.saveButton.callback = self.sendPostToDM
         self.add_item(self.saveButton)
-        self.revealButton = Button(emoji="💬", style=ButtonStyle.blurple)
+        self.revealButton = Button(emoji="💬", style=ButtonStyle.blurple)  # reveal button
         self.revealButton.callback = self.reveal
         self.add_item(self.revealButton)
-        self.linkButton = Button(label="Post öffnen", url=self.url)
+        self.linkButton = Button(label="Post öffnen", url=self.url)  # link button
         self.add_item(self.linkButton)
 
         self.success = False
         self.sub_private = False
+        self.nsfw_allowed = nsfw
 
         self.cachedData: dict = {}
         self.previousPics: list = []
         self.after = ""
         self.pagesCount = 0
+        self.postCount = 0
 
-    async def setNewEmbed(self):
+    async def getNewPost(self) -> None:
+        """
         post: dict
         try:
-            if "reddit.com" in self.url:
-                url = self.url + (f"?after={self.after}" if self.after != "" else "")
-                api = urllib.request.urlopen(url)
-                data = json.load(api)
-                self.cachedData = data
-                while True:
-                    posts = data["data"]["children"]
-                    post = posts[random.randint(0, len(posts) - 1)]["data"]
-                    purl = post["url"]
-                    if purl not in self.previousPics and (purl.endswith(".jpg") or purl.endswith(".gif") or purl.endswith(".png") or purl.endswith(".webp")):
-                        self.previousPics.append(purl)
-                        break
-                    if len(self.previousPics) > 15 * self.pagesCount:
-                        self.after = data["data"]["after"]
-                        self.pagesCount += 1
-            elif "meme-api" in self.url:
-                while True:
-                    response = requests.get(self.url)
-                    if not response.ok:
-                        print(response.status_code)
-                        self.embed = discord.Embed(description="Hier hat etwas nicht funktioniert.")
-                        self.success = False
-                        self.sub_private = True
-                        return
-                    post = response.json()
-                    if post["url"] not in self.previousPics:
-                        self.previousPics.append(post["url"])
-                        break
-            self.success = True
+            pass
         except urllib.error.HTTPError as e:
             if str(e.status) == "403":
-                self.embed = discord.Embed(title="🔒 Dieser Subreddit ist privat.", description="Du kannst gerade nicht auf diesen Subreddit zugreifen. Versuche es bitte später wieder.")
+                self.embed = discord.Embed(title="🔒 Dieser Subreddit ist privat.",
+                                           description="Du kannst gerade nicht auf diesen Subreddit zugreifen. Versuche es bitte später wieder.")
                 self.sub_private = True
-                return
+                return {}
             elif self.cachedData is not None or self.cachedData is not {}:
                 posts = self.cachedData["data"]["children"]
                 while True:
                     post = posts[random.randint(0, len(posts) - 1)]["data"]
                     purl = post["url"]
-                    if purl not in self.previousPics and (purl.endswith(".jpg") or purl.endswith(".gif") or purl.endswith(".png") or purl.endswith(".webp")):
+                    if purl not in self.previousPics and (
+                            purl.endswith(".jpg") or purl.endswith(".gif") or purl.endswith(".png") or purl.endswith(
+                            ".webp")):
                         self.previousPics.append(purl)
                         break
             else:
                 self.embed = discord.Embed(description="Versuche es bitte gleich nochmal.", colour=cogColor)
-                return
-        self.embed = await self.buildEmbed(f"r/{post['subreddit']}", post["author"], post["url"])
+                return {}
+        self.postCount += 1
+        await self.buildEmbed(post) """
+        return {}
 
-    async def buildEmbed(self, subreddit: str, author: str, pictureUrl: str):
-        embed = discord.Embed(title=f"{subreddit} - Post von {author}", colour=cogColor)
-        embed.set_image(url=pictureUrl)
+    async def buildEmbed(self, post: dict):
+        embed = discord.Embed(title=f"{post['subreddit']} - Post von {post["author"]}")
+        embed.set_image(url=post["url"])
         embed.set_footer(text="Powered by Reddit")
         return embed
 
-    async def getEmbed(self):
-        await self.setNewEmbed()
+    async def getEmbed(self) -> discord.Embed:
+        await self.getNewPost()
         await self.updateButtons()
         return self.embed
 
     async def updateButtons(self):
         self.newButton.disabled = self.sub_private
-        self.saveButton.disabled = False if self.success else True
-        self.revealButton.disabled = False if self.success else True
-        self.prevButton.disabled = False if len(self.previousPics) > 1 else True
+        self.saveButton.disabled = not self.success
+        self.revealButton.disabled = not self.success
+        self.prevButton.disabled = not len(self.previousPics) == 0
 
-    async def sendPostToDM(self, i: discord.Interaction):
-        try:
-            embed = discord.Embed(description="Du hast dieses Bild gespeichert!")
-            await i.user.send(embeds=[embed, self.embed])
-            self.saveButton.disabled = True
-            await i.response.edit_message(view=self)
-        except Exception as e:
-            await i.response.send_message(embed=discord.Embed(description="Das hat leider nicht geklappt.", colour=cogColor), ephemeral=True)
-
-    async def newPost(self, i: discord.Interaction):
+    async def newPost(self, i: discord.Interaction) -> None:
         await i.response.edit_message(embed=await self.getEmbed(), view=self)
 
-    async def loadPrevPost(self, i: discord.Interaction):
+    async def loadPrevPost(self, i: discord.Interaction) -> None:
         self.embed = discord.Embed(title="Vorheriger Post", colour=cogColor)
         self.embed.set_footer(text="Powered by Reddit")
         self.embed.set_image(url=self.previousPics[-2])
@@ -203,7 +173,79 @@ class PostView(View):
         await self.updateButtons()
         await i.response.edit_message(embed=self.embed, view=self)
 
-    async def reveal(self, i: discord.Interaction):
+    async def sendPostToDM(self, i: discord.Interaction) -> None:
+        try:
+            embed = discord.Embed(description="Du hast dieses Bild gespeichert!")
+            await i.user.send(embeds=[embed, self.embed])
+            self.saveButton.disabled = True
+            await i.response.edit_message(view=self)
+        except Exception as e:
+            await i.response.send_message(
+                embed=discord.Embed(description="Das hat leider nicht geklappt.", colour=cogColor), ephemeral=True)
+
+    async def reveal(self, i: discord.Interaction) -> None:
         self.revealButton.disabled = True
         await i.response.edit_message(view=self)
         await i.followup.send(embed=self.embed)
+
+
+class MemeView(PostView):
+
+    def __init__(self):
+        super().__init__(False, "https://meme-api.com/gimme")
+
+    async def getNewPost(self) -> None:
+        while True:
+            response = requests.get(self.url)
+            if not response.ok:
+                print(response.status_code)
+                self.embed = discord.Embed(description="Hier hat etwas nicht funktioniert.")
+                self.success = False
+                self.sub_private = True
+                return {}
+            post = response.json()
+            if post["url"] not in self.previousPics:
+                self.previousPics.append(post)
+                break
+        self.success = True
+        self.embed = await self.buildEmbed(post)
+
+    async def buildEmbed(self, post: dict) -> discord.Embed:
+        embed = discord.Embed(title=f"{post['subreddit']} - Post von {post["author"]}")
+        embed.set_image(url=post["url"])
+        embed.set_footer(text="Powered by Reddit")
+        return embed
+
+
+class RedditView(PostView):
+
+    def __init__(self, subreddit: str, nsfw: bool):
+        super().__init__(nsfw, subreddit)
+
+    async def getNewPost(self):
+        # fetch data from api
+        url = self.url + (f"?after={self.after}" if self.after != "" else "")
+        api = urllib.request.urlopen(url)
+        data = json.load(api)
+        self.cachedData = data
+        while True:
+            # Extract posts from JSON
+            posts = data["data"]["children"]
+            index = random.randint(0, len(posts) - 1)
+            post = posts[index]["data"]
+            purl = post["url"]
+            if purl not in self.previousPics and (purl.endswith(".jpg") or purl.endswith(".gif") or purl.endswith(".png") or purl.endswith(".webp")):
+                self.previousPics.append(post)
+                return post
+            elif purl not in self.previousPics:
+                posts[index] = posts[-1]
+            if len(self.previousPics) > 15 * self.pagesCount:
+                self.after = data["data"]["after"]
+                self.pagesCount += 1
+        self.embed = await self.buildEmbed(post)
+
+    async def buildEmbed(self, post: dict):
+        embed = discord.Embed(title=f"{post['subreddit']} - Post von {post["author"]}")
+        embed.set_image(url=post["url"])
+        embed.set_footer(text="Powered by Reddit")
+        return embed

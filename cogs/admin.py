@@ -88,35 +88,44 @@ class Administration(commands.Cog):
         embed.add_field(name="Einladungslink", value=link, inline=True)
         await i.response.send_message(embed=embed)
 
-    @app_commands.command(name="member",
-                          description="Zeigt eine Liste im allen Mitgliedern des Servers oder Details zu einem User an.")
+    @app_commands.command(name="member", description="Zeigt Details zu einem User an.")
     @app_commands.describe(user="Nutzer, über den Informationen angezeigt werden sollen.")
-    async def member(self, i: discord.Interaction, user: discord.Member = None):
-        await i.response.defer()
+    async def member(self, i: discord.Interaction, user: discord.Member):
         if not user:
-            embed = discord.Embed(title=f"Nutzer von {i.guild.name}", colour=cogColor)
-            member = i.guild.members
-            for user in member[:10]:
-                if not user.name == self.client.user.name:
-                    embed.add_field(name=STATUS[user.status] + user.name,
-                                    value=f"**Rollen({len(user.roles ) - 1}): **"+",  ".join([str(r.name) for r in user.roles[1:]]), inline=False)
-            if len(member) > 10:
-                embed.set_footer(text=f"Und {len(member) - 11} mehr...")
-            embed.set_thumbnail(url=i.guild.icon)
-        else:
-            embed = discord.Embed(title=f"{'Discord Bot' if user.bot else 'Nutzer'} {user.display_name}",
-                                  colour= discord.Colour.green() if user.status == discord.Status.online else discord.Colour.red())
-            embed.set_thumbnail(url=user.avatar)
-            embed.add_field(name="Registriert am", value=user.created_at.strftime("%d. %B %Y um %H:%M"), inline=True)
-            embed.add_field(name="Beigetreten am", value=user.joined_at.strftime("%d. %B %Y um %H:%M"), inline=True)
-            embed.add_field(name="Status", value=STATUS[user.status] + user.status.name, inline=False)
-            embed.add_field(name=f"Rollen({len(user.roles) - 1})",
-                            value="\r\n".join([str(r.mention) for r in user.roles[1:]]), inline=True)
-            ip = await asyncify(self.getIpFromDiscordID)(userid=user.id)
-            if len(ip.split(".")) == 4:
-                embed.add_field(name="IP-Adresse", value=ip, inline=False)
-            embed.set_footer(text=f"ID: {user.id}")
-        await i.followup.send(embed=embed, ephemeral=True)
+            await i.response.send_message("Du musst einen Nutzer angeben", ephemeral=True)
+        embeds: list[discord.Embed] = []
+
+        # Title embed
+        embeds.append(discord.Embed(title=f"**{user.global_name}** {f"aka {user.display_name}" if user.global_name != user.display_name else ""}",
+                                    colour=user.accent_colour)
+                      .set_thumbnail(url=user.avatar)
+                      .add_field(name=f"{'Discord Bot' if user.bot else 'Nutzer'}", value=" ")
+                      )
+
+        # Stats embed
+        embeds.append(discord.Embed(title="Stats", colour=user.accent_colour)
+                      .add_field(name="Registriert am", value=user.created_at.strftime("%d. %B %Y"))
+                      .add_field(name="Beigetreten am", value=user.joined_at.strftime("%d. %B %Y"))
+                      )
+
+        # Server specific embed
+        embeds.append(discord.Embed(title="Server", colour=user.accent_colour)
+                      .add_field(name=f"Rollen({len(user.roles) - 1})", value="\r\n".join([str(r.mention) for r in user.roles[1:]]), inline=True))
+
+        await i.response.send_message(ephemeral=True, embeds=embeds)
+
+    @app_commands.command(name="members", description="Schickt eine Liste mit allen Mitgliedern dieses Servers")
+    async def members(self, i: discord.Interaction):
+        embed = discord.Embed(title=f"Nutzer von {i.guild.name}", colour=cogColor)
+        member = i.guild.members
+        for user in member[:10]:
+            if not user.name == self.client.user.name:
+                embed.add_field(name=f"{STATUS[user.status]} {user.name}",
+                                value="".join([str(r.mention) for r in user.roles[1:3]]), inline=False)
+        if len(member) > 10:
+            embed.set_footer(text=f"Und {len(member) - 11} mehr...")
+        embed.set_thumbnail(url=i.guild.icon)
+        await i.response.send_message(embed=embed)
 
     @app_commands.command(name="clear", description="Löscht Nachrichten aus dem aktuellen Channel.")
     @app_commands.default_permissions(manage_messages=True)
@@ -126,6 +135,7 @@ class Administration(commands.Cog):
     async def clear(self, i: discord.Interaction, amount: int = 1, keyword: str = None, user: discord.User = None):
         if amount < 1: await i.response.send_message(embed=discord.Embed(description="Die Menge muss größer als 0 sein.", color=cogColor))
         if amount > 100: await i.response.send_message(embed=discord.Embed(description="Du kannst nur maximal 100 Nachrichten auf einmal löschen.", color=cogColor))
+
 
         basicCheck = lambda message: message.pinned is False and message != i.message
         containsKey = lambda message: message.content.__contains__(keyword)
@@ -143,23 +153,14 @@ class Administration(commands.Cog):
             await i.response.send_message(embed=discord.Embed(description=f"Es wurden {amount} Nachrichten in {i.channel.name} gelöscht!"))
         except discord.errors.NotFound as e:
             await i.response.send_message(embed=discord.Embed(description=f"Die Nachrichten konnten nicht gelöscht werden."))
+        except AttributeError as e:
+            await i.response.send_message("Du kannst keine DMs löschen")
 
     @app_commands.command(name="announce", description="Erstellt eine Ankündigung als übersichtliches Embed.")
     async def announce(self, i: discord.Interaction, title: str, description: str):
         pass
         # view = self.EmbedCreatorView(title, description)
         # await i.response.send_message(embed=await view.getEmbed(), view=view)
-
-    def getIpFromDiscordID(self, userid: int) -> str:
-        url = f"https://discordresolver.c99.nl/index.php"
-        payload = {"userid": str(userid), "submit": ""}
-        header = {}
-        response = requests.post(url, payload, header)
-        if response.status_code != 200:
-            return ""
-        html_text = BeautifulSoup(response.text, "html.parser")
-        ip = html_text.find("div", class_="well").find("center").find("h2").text
-        return ip
 
     channels = app_commands.Group(name="channel",
                                   description="Verwaltung von Channels",

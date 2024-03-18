@@ -10,9 +10,9 @@ class Games(commands.GroupCog):
 
     @app_commands.command(name="tictactoe", description="Ein einfaches Tic-Tac-Toe mit einem anderen Spieler.")
     @app_commands.describe(player="Der zweite Spieler")
-    async def tictactoe(self, i: discord.Interaction, player: discord.User):
-        if player.id is i.user.id:
-            await i.response.send_message("Du kannst dieses Spiel nicht mit dir selbst spielen.", ephemeral=True)
+    async def tictactoe(self, i: discord.Interaction, player: discord.Member):
+        if player.id is i.user.id or player.bot:
+            await i.response.send_message("Du kannst dieses Spiel nur mit einem anderen User spielen.", ephemeral=True)
             return
         view = TicTacToeView([i.user.id, player.id], self.client)
         await i.response.send_message(view=view)
@@ -21,7 +21,7 @@ class Games(commands.GroupCog):
     @app_commands.command(name="slots", description="Hast du Bock auf das ganz große Geld? Schreit der Knossi in dir? Dann spiel jetzt Slots!")
     async def slots(self, i: discord.Interaction):
         view = SlotView()
-        await i.response.send_message("Hieran wird gerade noch gearbeitet!")
+        await i.response.send_message("Hieran wird gerade noch gearbeitet!", ephemeral=True)
 
 
 async def setup(client):
@@ -36,6 +36,7 @@ class TicTacToeView(View):
 
     def __init__(self, players: list[discord.Member.id], client: discord.Client):
         super().__init__(timeout=None)
+        # Setting up parameters & players
         self.client = client
         self.players = {
             players[0]: self.symbols[0],
@@ -44,6 +45,11 @@ class TicTacToeView(View):
         self.playerPrev = players[1]
         for i, player in enumerate(self.players):
             self.players[player] = self.symbols[i]
+
+        # Creating the title embed
+        #self.embed = discord.Embed()
+
+        # Adding buttons to the view
         buttons = []
         for i in range(0, 3):
             temp = []
@@ -124,8 +130,9 @@ class SlotView(View):
     }
 
     def __init__(self):
-        super.__init__()
-        pool: list[str]
+        super().__init__()
+        pool: list[str] = []
         for symbol in self.symbols:
-            list += [symbol]*self.symbols[symbol]
-        print(pool)
+            pool += [symbol]*self.symbols[symbol]
+
+        #self.embed = discord.Embed(title="Slots", colour=)
