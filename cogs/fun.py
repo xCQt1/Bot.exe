@@ -88,8 +88,6 @@ class PostView(View):
 
         # Setting URL and checking it
         self.url = url
-        if str(requests.get(self.url).status_code).startswith("4"):
-            raise Exception(f"Hier hat etwas nicht geklappt")
 
         # Setting up the buttons
         self.prevButton = Button(emoji="⬅️", style=ButtonStyle.blurple, row=1)  # back button
@@ -104,12 +102,11 @@ class PostView(View):
         self.revealButton = Button(emoji="💬", style=ButtonStyle.blurple)  # reveal button
         self.revealButton.callback = self.reveal
         self.add_item(self.revealButton)
-        self.linkButton = Button(label="Post öffnen", url=self.url)  # link button
-        self.add_item(self.linkButton)
 
         self.success = False
         self.sub_private = False
         self.nsfw_allowed = nsfw
+        self.postIsNSFW = False
 
         self.cachedData: dict = {}
         self.previousPics: list = []
@@ -118,35 +115,11 @@ class PostView(View):
         self.postCount = 0
 
     async def getNewPost(self) -> None:
-        """
-        post: dict
-        try:
-            pass
-        except urllib.error.HTTPError as e:
-            if str(e.status) == "403":
-                self.embed = discord.Embed(title="🔒 Dieser Subreddit ist privat.",
-                                           description="Du kannst gerade nicht auf diesen Subreddit zugreifen. Versuche es bitte später wieder.")
-                self.sub_private = True
-                return {}
-            elif self.cachedData is not None or self.cachedData is not {}:
-                posts = self.cachedData["data"]["children"]
-                while True:
-                    post = posts[random.randint(0, len(posts) - 1)]["data"]
-                    purl = post["url"]
-                    if purl not in self.previousPics and (
-                            purl.endswith(".jpg") or purl.endswith(".gif") or purl.endswith(".png") or purl.endswith(
-                            ".webp")):
-                        self.previousPics.append(purl)
-                        break
-            else:
-                self.embed = discord.Embed(description="Versuche es bitte gleich nochmal.", colour=cogColor)
-                return {}
-        self.postCount += 1
-        await self.buildEmbed(post) """
-        return {}
+        pass
 
     async def buildEmbed(self, post: dict):
-        embed = discord.Embed(title=f"{post['subreddit']} - Post von {post["author"]}")
+        embed = discord.Embed(title=f"**{post['title']}**  -  r/{post["subreddit"]}")
+        embed.set_author(name=post["author"])
         embed.set_image(url=post["url"])
         embed.set_footer(text="Powered by Reddit")
         return embed
@@ -159,8 +132,8 @@ class PostView(View):
     async def updateButtons(self):
         self.newButton.disabled = self.sub_private
         self.saveButton.disabled = not self.success
-        self.revealButton.disabled = not self.success
-        self.prevButton.disabled = not len(self.previousPics) == 0
+        self.revealButton.disabled = not self.success or (not self.nsfw_allowed and self.postIsNSFW)
+        self.prevButton.disabled = len(self.previousPics) == 0
 
     async def newPost(self, i: discord.Interaction) -> None:
         await i.response.edit_message(embed=await self.getEmbed(), view=self)
@@ -168,7 +141,7 @@ class PostView(View):
     async def loadPrevPost(self, i: discord.Interaction) -> None:
         self.embed = discord.Embed(title="Vorheriger Post", colour=cogColor)
         self.embed.set_footer(text="Powered by Reddit")
-        self.embed.set_image(url=self.previousPics[-2])
+        self.embed.set_image(url=self.previousPics[-1])
         self.previousPics = self.previousPics[:-1]
         await self.updateButtons()
         await i.response.edit_message(embed=self.embed, view=self)
@@ -199,10 +172,10 @@ class MemeView(PostView):
             response = requests.get(self.url)
             if not response.ok:
                 print(response.status_code)
-                self.embed = discord.Embed(description="Hier hat etwas nicht funktioniert.")
+                self.embed = discord.Embed(title="Hier hat etwas nicht funktioniert.").add_field(name=" ", value=f"`{response.status_code}`")
                 self.success = False
-                self.sub_private = True
-                return {}
+                await self.updateButtons()
+                return
             post = response.json()
             if post["url"] not in self.previousPics:
                 self.previousPics.append(post)
@@ -210,42 +183,54 @@ class MemeView(PostView):
         self.success = True
         self.embed = await self.buildEmbed(post)
 
-    async def buildEmbed(self, post: dict) -> discord.Embed:
-        embed = discord.Embed(title=f"{post['subreddit']} - Post von {post["author"]}")
-        embed.set_image(url=post["url"])
-        embed.set_footer(text="Powered by Reddit")
-        return embed
-
 
 class RedditView(PostView):
 
     def __init__(self, subreddit: str, nsfw: bool):
-        super().__init__(nsfw, subreddit)
+        super().__init__(nsfw, f"https://www.reddit.com/{"r/" if not subreddit.startswith("r/") else ""}{subreddit}.json")
 
     async def getNewPost(self):
         # fetch data from api
-        url = self.url + (f"?after={self.after}" if self.after != "" else "")
-        api = urllib.request.urlopen(url)
-        data = json.load(api)
-        self.cachedData = data
+        if self.cachedData == {}:
+            url = self.url + (f"?after={self.after}" if self.after != "" else "")
+            response = requests.get(url)
+            if not response.ok:
+                print(response.status_code)
+                self.embed = discord.Embed(title="Hier hat etwas nicht funktioniert.").add_field(name=" ", value=f"HTTP Error Code: `{response.status_code}`")
+                self.success = False
+                await self.updateButtons()
+                return
+            data = response.json()
+            print(data)
+            self.cachedData = data
+
         while True:
-            # Extract posts from JSON
-            posts = data["data"]["children"]
-            index = random.randint(0, len(posts) - 1)
+            # Extract posts from cached JSON
+            posts = self.cachedData["data"]["children"]
+            index = random.randint(0, len(posts) - 2 if len(posts) > 1 else 0)
             post = posts[index]["data"]
             purl = post["url"]
-            if purl not in self.previousPics and (purl.endswith(".jpg") or purl.endswith(".gif") or purl.endswith(".png") or purl.endswith(".webp")):
-                self.previousPics.append(post)
-                return post
-            elif purl not in self.previousPics:
-                posts[index] = posts[-1]
-            if len(self.previousPics) > 15 * self.pagesCount:
-                self.after = data["data"]["after"]
-                self.pagesCount += 1
-        self.embed = await self.buildEmbed(post)
 
-    async def buildEmbed(self, post: dict):
-        embed = discord.Embed(title=f"{post['subreddit']} - Post von {post["author"]}")
-        embed.set_image(url=post["url"])
-        embed.set_footer(text="Powered by Reddit")
-        return embed
+            # checks whether current post is an image
+            if post not in self.previousPics:
+                # Remove post from list
+                # WENN INDEX GLEICH LETZTES ELEMENT EXCEPTION
+                print(f"{index}, {len(posts)}")
+                if len(posts) != 1:
+                    self.cachedData["data"]["children"][index] = self.cachedData["data"]["children"].pop(-1)
+                else:
+                    self.cachedData["data"]["children"].pop(-1)
+
+                # Check if post is an image
+                if purl.endswith(".jpg") or purl.endswith(".jpeg") or purl.endswith(".gif") or purl.endswith(".png") or purl.endswith(".webp"):
+                    self.previousPics.append(post)
+                    self.success = True
+                    self.postIsNSFW = post["over_18"]
+                    break
+
+            # Checks if new posts need to be loaded
+            if len(self.cachedData["data"]["children"]) == 0:
+                self.after = self.cachedData["data"]["after"]
+                self.pagesCount += 1
+                self.cachedData = {}
+        self.embed = await self.buildEmbed(post)
