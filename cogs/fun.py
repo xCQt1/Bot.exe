@@ -130,7 +130,7 @@ class PostView(View):
         return self.embed
 
     async def updateButtons(self):
-        self.newButton.disabled = self.sub_private
+        self.newButton.disabled = not self.success
         self.saveButton.disabled = not self.success
         self.revealButton.disabled = not self.success or (not self.nsfw_allowed and self.postIsNSFW)
         self.prevButton.disabled = len(self.previousPics) == 0
@@ -139,12 +139,9 @@ class PostView(View):
         await i.response.edit_message(embed=await self.getEmbed(), view=self)
 
     async def loadPrevPost(self, i: discord.Interaction) -> None:
-        self.embed = discord.Embed(title="Vorheriger Post", colour=cogColor)
-        self.embed.set_footer(text="Powered by Reddit")
-        self.embed.set_image(url=self.previousPics[-1])
-        self.previousPics = self.previousPics[:-1]
+        post = self.previousPics.pop(-1)
         await self.updateButtons()
-        await i.response.edit_message(embed=self.embed, view=self)
+        await i.response.edit_message(embed=self.buildEmbed(post), view=self)
 
     async def sendPostToDM(self, i: discord.Interaction) -> None:
         try:
@@ -191,7 +188,7 @@ class RedditView(PostView):
 
     async def getNewPost(self):
         # fetch data from api
-        if self.cachedData == {}:
+        if len(self.cachedData) == 0:
             url = self.url + (f"?after={self.after}" if self.after != "" else "")
             response = requests.get(url)
             if not response.ok:
@@ -201,10 +198,18 @@ class RedditView(PostView):
                 await self.updateButtons()
                 return
             data = response.json()
-            print(data)
             self.cachedData = data
 
         while True:
+
+            # Checks if new posts need to be loaded
+            if len(self.cachedData["data"]["children"]) == 0:
+                self.after = self.cachedData["data"]["after"]
+                self.pagesCount += 1
+                self.cachedData = {}
+                await self.getNewPost()
+                return
+
             # Extract posts from cached JSON
             posts = self.cachedData["data"]["children"]
             index = random.randint(0, len(posts) - 2 if len(posts) > 1 else 0)
@@ -214,8 +219,6 @@ class RedditView(PostView):
             # checks whether current post is an image
             if post not in self.previousPics:
                 # Remove post from list
-                # WENN INDEX GLEICH LETZTES ELEMENT EXCEPTION
-                print(f"{index}, {len(posts)}")
                 if len(posts) != 1:
                     self.cachedData["data"]["children"][index] = self.cachedData["data"]["children"].pop(-1)
                 else:
@@ -227,10 +230,4 @@ class RedditView(PostView):
                     self.success = True
                     self.postIsNSFW = post["over_18"]
                     break
-
-            # Checks if new posts need to be loaded
-            if len(self.cachedData["data"]["children"]) == 0:
-                self.after = self.cachedData["data"]["after"]
-                self.pagesCount += 1
-                self.cachedData = {}
         self.embed = await self.buildEmbed(post)
