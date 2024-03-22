@@ -120,7 +120,7 @@ class PostView(View):
     async def buildEmbed(self, post: dict):
         embed = discord.Embed(title=f"**{post['title']}**  -  r/{post["subreddit"]}")
         embed.set_author(name=post["author"])
-        embed.set_image(url=post["url"])
+        embed.set_image(url= "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/CENSORED.svg/2560px-CENSORED.svg.png" if post["over_18"] and not self.nsfw_allowed else post["url"])
         embed.set_footer(text="Powered by Reddit")
         return embed
 
